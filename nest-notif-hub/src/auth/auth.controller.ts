@@ -1,9 +1,9 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { AuthGuard } from '@nestjs/passport';
 import type {Request} from 'express'
 import { OidcProfile } from './types/auth.interfaces';
+import { OidcAuthGuard } from '../shared/guards/oidc-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -16,17 +16,17 @@ export class AuthController {
     }
 
 
-
     @Get('oidc/login')
-    @UseGuards(AuthGuard('oidc'))
+    @UseGuards(OidcAuthGuard)
     oidcLogin() {
 
     }
 
 
     @Get('oidc/callback')
-    @UseGuards(AuthGuard('oidc'))
+    @UseGuards(OidcAuthGuard)
     async oidcCallback(@Req() req: Request) {
+      console.log("reaching oidc callback");
       const profile = req.user as OidcProfile;
       return this.authService.loginWithOidc(profile);
     }

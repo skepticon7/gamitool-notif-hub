@@ -6,11 +6,30 @@ export interface LoginResult {
 
 export interface OidcProfile {
   id: string;
-  displayName?: string;
-  emails?: {value: string} [];
+  sub: string;
+  name: string;
+  displayName : string;
+  email:  string;
   accessToken?: string;
   refreshToken?: string;
   expiresIn?: number;
+  groups: string[];
   [key: string]: unknown;
 }
+
+export interface AppJwtPayload {
+  sub: string;
+  userId: string;
+  email: string;
+  name: string;
+  groups : string[]
+}
+
+
+
+
+
+
+
+
 
