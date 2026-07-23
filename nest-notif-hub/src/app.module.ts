@@ -11,6 +11,7 @@ import { OutboxModule } from './outbox/outbox.module';
 import { RuleEngineModule } from './rule-engine/rule-engine.module';
 import { AdminModule } from './admin/admin.module';
 import { MissionsModule } from './missions/missions.module';
+import { EmployeesModule } from './employees/employees.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { MissionsModule } from './missions/missions.module';
     RuleEngineModule,
     AdminModule,
     MissionsModule,
+    EmployeesModule,
   ],
 })
 export class AppModule {}

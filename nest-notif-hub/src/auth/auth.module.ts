@@ -3,6 +3,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthentikModule } from '../infrastructure/authentik/authentik.module';
 import { OidcStrategy } from './oidc/oidc.strategy';
+import { JwtStrategy } from './jwt/jwt.strategy';
 import { PassportModule } from '@nestjs/passport';
 import {JwtModule} from "@nestjs/jwt"
 import { AuthentikService } from '../infrastructure/authentik/authentik.service';
@@ -12,7 +13,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService , AuthentikService ,  OidcStrategy],
+  providers: [AuthService , AuthentikService ,  OidcStrategy, JwtStrategy],
   imports: [ UsersModule ,CqrsModule ,AuthentikModule , PassportModule.register({session : true})  ,
     JwtModule.registerAsync({
       imports : [ConfigModule],

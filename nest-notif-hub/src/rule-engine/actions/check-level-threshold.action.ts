@@ -2,15 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Action, ActionContext, ActionResult } from './action.interface';
-import { EmployeeEntity } from '../../employees/entities/employee.entity';
+import { EmployeeUserEntity } from '../../users/entities/employee-user.entity';
 
 @Injectable()
 export class CheckLevelThresholdAction implements Action {
   readonly actionType = 'CheckLevelThreshold';
+  readonly requiredPayloadFields = ['employeeId'];
 
   constructor(
-    @InjectRepository(EmployeeEntity)
-    private readonly employeeRepo: Repository<EmployeeEntity>,
+    @InjectRepository(EmployeeUserEntity)
+    private readonly employeeRepo: Repository<EmployeeUserEntity>,
   ) {}
 
   async execute(
@@ -19,7 +20,8 @@ export class CheckLevelThresholdAction implements Action {
     context: ActionContext,
   ): Promise<ActionResult> {
     const employeeId = payload.employeeId;
-    const xpPerLevel = Number(params.xpPerLevel ?? 100);
+    const baseXp = Number(params.xpPerLevel ?? 100);
+    const growthRate = Number(params.growthRate ?? 1.5);
     const repo = context.manager
       ? context.manager.withRepository(this.employeeRepo)
       : this.employeeRepo;
@@ -31,7 +33,7 @@ export class CheckLevelThresholdAction implements Action {
     const employee = await repo.findOneByOrFail({
       id: employeeId,
     });
-    const computedLevel = Math.floor(employee.xp / xpPerLevel) + 1;
+    const computedLevel = this.computeLevel(employee.xp, baseXp, growthRate);
 
     if (computedLevel <= employee.level) {
       return { shouldEmit: false };
@@ -47,5 +49,22 @@ export class CheckLevelThresholdAction implements Action {
         previousLevel: employee.level,
       },
     };
+  }
+
+  // Each level costs `growthRate` times more XP than the one before it —
+  // e.g. baseXp=100, growthRate=1.5: level 2 needs 100 cumulative XP,
+  // level 3 needs 250, level 4 needs 475, level 5 needs 813 — a growing
+  // curve instead of the old flat "every N XP = 1 level." Both params stay
+  // admin-tunable per wiring, same as before.
+  private computeLevel(xp: number, baseXp: number, growthRate: number): number {
+    let level = 1;
+    let xpForNextLevel = baseXp;
+    let cumulative = 0;
+    while (xp >= cumulative + xpForNextLevel) {
+      cumulative += xpForNextLevel;
+      level++;
+      xpForNextLevel = Math.round(xpForNextLevel * growthRate);
+    }
+    return level;
   }
 }

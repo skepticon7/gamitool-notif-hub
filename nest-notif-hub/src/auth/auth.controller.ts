@@ -26,7 +26,6 @@ export class AuthController {
     @Get('oidc/callback')
     @UseGuards(OidcAuthGuard)
     async oidcCallback(@Req() req: Request) {
-      console.log("reaching oidc callback");
       const profile = req.user as OidcProfile;
       return this.authService.loginWithOidc(profile);
     }

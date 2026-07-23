@@ -1,62 +1,48 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  NotFoundException,
-  Param,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { EventLinkEntity } from '../../rule-engine/entities/event-link.entity';
-import { RulesCache } from '../../rule-engine/services/rules-cache';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateEventLinkDto } from '../dto/create-event-link.dto';
 import { UpdateEventLinkDto } from '../dto/update-event-link.dto';
+import { CreateEventLinkCommand } from '../../rule-engine/commands/create-event-link.command';
+import { UpdateEventLinkCommand } from '../../rule-engine/commands/update-event-link.command';
+import { DeleteEventLinkCommand } from '../../rule-engine/commands/delete-event-link.command';
+import { GetEventLinksQuery } from '../../rule-engine/queries/get-event-links.query';
+import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
+import { RolesGuard } from '../../shared/guards/roles.guard';
+import { Roles } from '../../shared/decorators/roles.decorator';
 
 // RuleEngineConsumer reads rules from RulesCache, an in-memory map — not
-// from this table directly. Every mutation here calls rulesCache.reload()
-// afterward, so the change is live before the response is even returned.
-// Single app instance, so a direct method call is enough — no need for a
-// pub/sub signal to coordinate other processes that don't exist.
+// from this table directly. Every mutating handler calls rulesCache.reload()
+// afterward, so the change is live before this response even returns.
 @Controller('admin/event-links')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')
 export class EventLinksController {
   constructor(
-    @InjectRepository(EventLinkEntity)
-    private readonly repo: Repository<EventLinkEntity>,
-    private readonly rulesCache: RulesCache,
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus,
   ) {}
 
   @Get()
   findAll(@Query('sourceEvent') sourceEvent?: string) {
-    return this.repo.find(sourceEvent ? { where: { sourceEvent } } : {});
+    return this.queryBus.execute(new GetEventLinksQuery(sourceEvent));
   }
 
   @Post()
-  async create(@Body() dto: CreateEventLinkDto) {
-    const saved = await this.repo.save(
-      this.repo.create({ ...dto, targetEvent: dto.targetEvent ?? null }),
+  create(@Body() dto: CreateEventLinkDto) {
+    return this.commandBus.execute(
+      new CreateEventLinkCommand(dto.sourceEvent, dto.action, dto.params, dto.targetEvent),
     );
-    await this.rulesCache.reload();
-    return saved;
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() dto: UpdateEventLinkDto) {
-    const existing = await this.repo.findOneBy({ id });
-    if (!existing) throw new NotFoundException(`event_links row ${id} not found`);
-
-    await this.repo.update(id, dto);
-    await this.rulesCache.reload();
-    return this.repo.findOneBy({ id });
+  update(@Param('id') id: string, @Body() dto: UpdateEventLinkDto) {
+    return this.commandBus.execute(
+      new UpdateEventLinkCommand(id, dto.sourceEvent, dto.action, dto.params, dto.targetEvent),
+    );
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    await this.repo.delete(id);
-    await this.rulesCache.reload();
-    return { deleted: true };
+  remove(@Param('id') id: string) {
+    return this.commandBus.execute(new DeleteEventLinkCommand(id));
   }
 }

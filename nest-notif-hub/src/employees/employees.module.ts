@@ -1,9 +1,18 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { EmployeeEntity } from './entities/employee.entity';
+import { EmployeeProjectionConsumer } from './services/employee-projection.consumer';
+import { MongooseModule } from '@nestjs/mongoose';
+import {
+  EmployeeProjection,
+  EmployeeProjectionSchema,
+} from './schemas/employee-projection.schema';
 
+// Purely the Mongo read-model projection now — the SQL Employee entity moved
+// to users/entities/employee-user.entity.ts (Single Table Inheritance with
+// UserEntity/AdminUserEntity, see UsersModule).
 @Module({
-  imports: [TypeOrmModule.forFeature([EmployeeEntity])],
-  exports: [TypeOrmModule],
+  imports: [
+    MongooseModule.forFeature([{name : EmployeeProjection.name , schema : EmployeeProjectionSchema}]),
+  ],
+  providers : [EmployeeProjectionConsumer],
 })
 export class EmployeesModule {}

@@ -11,12 +11,72 @@ import {
 import { CookieJar } from 'tough-cookie';
 import { wrapper } from 'axios-cookiejar-support';
 import { OidcProfile } from '../../auth/types/auth.interfaces';
+import { randomBytes } from 'node:crypto';
 
 @Injectable()
 export class AuthentikService {
   constructor(
     private readonly configService: ConfigService,
   ) {}
+
+  // Admin API (API_TOKEN), separate from the OIDC client used everywhere else
+  // in this service — this creates the account, it doesn't authenticate anyone.
+  private adminClient(): AxiosInstance {
+    return axios.create({
+      baseURL: this.configService.getOrThrow<string>('AUTHENTIK_URL'),
+      headers: {
+        Authorization: `Bearer ${this.configService.getOrThrow<string>('API_TOKEN')}`,
+      },
+      validateStatus: () => true,
+    });
+  }
+
+  // Creates the Authentik account only — no Authentik group is assigned here.
+  // Role/authorization lives solely in EDEN's own UserEntity.role (see
+  // AuthService.generateJwt); Authentik's job stops at proving identity.
+  //
+  // The returned `sub` is Authentik's user `uuid` — this provider's OAuth2
+  // config has sub_mode: 'user_uuid' (verified via GET /api/v3/providers/oauth2/),
+  // so `uuid` is what actually lands in the `sub` claim at login time, not `pk`.
+  async createUser(email: string, name: string): Promise<{ sub: string; temporaryPassword: string }> {
+    const client = this.adminClient();
+
+    const createRes = await client.post('/api/v3/core/users/', {
+      username: email,
+      name,
+      email,
+      is_active: true,
+    });
+
+    if (createRes.status !== 201) {
+      throw new BusinessException(
+        'AUTHENTIK_ERROR',
+        `Failed to create Authentik user: ${JSON.stringify(createRes.data)}`,
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+
+    const authentikUserId = createRes.data.pk;
+    const authentikUserUuid = createRes.data.uuid;
+    const temporaryPassword = randomBytes(9).toString('base64url');
+
+    const pwRes = await client.post(`/api/v3/core/users/${authentikUserId}/set_password/`, {
+      password: temporaryPassword,
+    });
+
+    if (pwRes.status !== 200 && pwRes.status !== 204) {
+      throw new BusinessException(
+        'AUTHENTIK_ERROR',
+        `Failed to set password for Authentik user: ${JSON.stringify(pwRes.data)}`,
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+
+    return {
+      sub: authentikUserUuid,
+      temporaryPassword,
+    };
+  }
 
   private client(): AxiosInstance {
     const jar = new CookieJar();
@@ -117,7 +177,7 @@ export class AuthentikService {
         client_id: clientId,
         redirect_uri: redirectUri,
         response_type: 'code',
-        scope: 'openid profile email',
+        scope: 'openid profile email offline_access',
         state,
       },
       maxRedirects: 0,
@@ -159,6 +219,7 @@ export class AuthentikService {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       },
     );
+
 
     return tokenRes.data;
   }

@@ -29,6 +29,12 @@ export interface Action {
   // looks up in ActionRegistry to find this action.
   readonly actionType: string;
 
+  // Declared contract: which payload fields this action reads. Checked at
+  // event_link wiring time (EventLinkGraphValidator) against the chosen
+  // sourceEvent's declared event_catalog.payloadFields — this is what turns
+  // "admin can wire anything" into "admin can wire anything that type-checks".
+  readonly requiredPayloadFields: string[];
+
   execute(
     payload: Record<string, any>,
     params: Record<string, any>,

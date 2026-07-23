@@ -7,6 +7,7 @@ import { ScheduledReminderEntity } from '../entities/scheduled-reminder.entity';
 @Injectable()
 export class CancelReminderAction implements Action {
   readonly actionType = 'CancelReminder';
+  readonly requiredPayloadFields = ['employeeId', 'missionId'];
 
   constructor(
     @InjectRepository(ScheduledReminderEntity)

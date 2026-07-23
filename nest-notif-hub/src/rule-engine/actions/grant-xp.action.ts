@@ -2,15 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Action, ActionContext, ActionResult } from './action.interface';
-import { EmployeeEntity } from '../../employees/entities/employee.entity';
+import { EmployeeUserEntity } from '../../users/entities/employee-user.entity';
 
 @Injectable()
 export class GrantXPAction implements Action {
   readonly actionType = 'GrantXP';
+  readonly requiredPayloadFields = ['employeeId', 'xpGranted'];
 
   constructor(
-    @InjectRepository(EmployeeEntity)
-    private readonly employeeRepo: Repository<EmployeeEntity>,
+    @InjectRepository(EmployeeUserEntity)
+    private readonly employeeRepo: Repository<EmployeeUserEntity>,
   ) {}
 
   async execute(
@@ -18,7 +19,7 @@ export class GrantXPAction implements Action {
     params: Record<string, any>,
     context: ActionContext,
   ): Promise<ActionResult> {
-    const amount = Number(params.amount ?? 0);
+    const amount = payload.xpGranted;
     const employeeId = payload.employeeId;
 
     // When called from within RuleEngineConsumer's transaction, this write
@@ -39,7 +40,10 @@ export class GrantXPAction implements Action {
 
     return {
       shouldEmit: true,
-      payload: { employeeId, xp: employee.xp, granted: amount },
+      // Same field name as the payload this action itself reads (xpGranted)
+      // — one name for "amount of XP" everywhere, so XPGranted's shape is
+      // never a trap for whatever gets wired to consume it.
+      payload: { employeeId, xp: employee.xp, xpGranted: amount },
     };
   }
 }

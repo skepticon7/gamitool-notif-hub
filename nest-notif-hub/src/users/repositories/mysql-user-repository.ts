@@ -1,6 +1,8 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { UserEntity } from '../entities/user.entity';
+import { UserEntity, UserRole } from '../entities/user.entity';
+import { EmployeeUserEntity } from '../entities/employee-user.entity';
+import { AdminUserEntity } from '../entities/admin-user.entity';
 import { EntityManager, QueryFailedError, Repository } from 'typeorm';
 import { BusinessException } from '../../shared/exceptions/business.exception';
 
@@ -15,10 +17,14 @@ export class MySqlUserRepository {
     return this.repository.findOne({ where: { sub } });
   }
 
-  create(manager: EntityManager, user: Partial<UserEntity>) {
+  // STI requires creating via the specific child class (EmployeeUserEntity /
+  // AdminUserEntity) for TypeORM to set the `role` discriminator column
+  // correctly — creating a plain UserEntity wouldn't populate it.
+  async create(manager: EntityManager, role: UserRole, user: Record<string, any>) {
     try {
-      const entity = manager.create(UserEntity , user);
-      return manager.save(entity);
+      const EntityClass = role === 'employee' ? EmployeeUserEntity : AdminUserEntity;
+      const entity = manager.create(EntityClass, user);
+      return await manager.save(entity);
     } catch (error) {
       if (
         error instanceof QueryFailedError &&

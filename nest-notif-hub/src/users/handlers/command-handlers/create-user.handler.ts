@@ -19,15 +19,39 @@ export class CreateUserHandler implements ICommandHandler<CreateUserCommand>{
     await queryRunner.connect();
     await queryRunner.startTransaction();
     try {
-      const user = await this.mysqlRepo.create(queryRunner.manager,
-        {
-          sub: command.sub,
-          email: command.email,
-          name : command.name
-        }
-      );
+      // Employee-only defaults live here rather than as a separate insert —
+      // with STI this is the same row, so there's nothing to insert twice.
+      const fields =
+        command.role === 'employee'
+          ? {
+              sub: command.sub,
+              email: command.email,
+              name: command.name,
+              xp: 0,
+              level: 1,
+              phone: null,
+              smsMode: 'sandbox' as const,
+            }
+          : {
+              sub: command.sub,
+              email: command.email,
+              name: command.name,
+            };
+
+      const user = await this.mysqlRepo.create(queryRunner.manager, command.role, fields);
+
+      // Two distinct event types, not one UserCreated with a role flag —
+      // every wiring against EmployeeAccountCreated is guaranteed to mean
+      // "a real employee", with no admin rows ever able to sneak into an
+      // employee-oriented rule (e.g. Notify) via a shared event shape.
+      const eventType = command.role === 'employee' ? 'EmployeeAccountCreated' : 'AdminAccountCreated';
+      const payload =
+        command.role === 'employee'
+          ? { employeeId: user.id, email: user.email, name: user.name }
+          : { userId: user.id, email: user.email, name: user.name };
+
       await this.outboxRepo.create(queryRunner.manager, {
-        eventType: 'UserCreated',
+        eventType,
         eventId: randomUUID(),
         // Root event of a new causal tree: fresh correlationId, no parent.
         // Later this should come from the inbound request via CLS instead of
@@ -37,12 +61,7 @@ export class CreateUserHandler implements ICommandHandler<CreateUserCommand>{
         aggregateType: 'User',
         aggregateId: user.id,
         occurredOn: new Date(),
-        payload: {
-          id: user.id,
-          sub: user.sub,
-          email: user.email,
-          name: user.name,
-        },
+        payload,
       });
       await queryRunner.commitTransaction();
       return user;

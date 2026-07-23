@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 @Injectable()
 export class ScheduleReminderAction implements Action {
   actionType: string = "ScheduleReminder";
+  readonly requiredPayloadFields = ['employeeId', 'missionId'];
 
   constructor(
     @InjectRepository(ScheduledReminderEntity)
