@@ -28,6 +28,7 @@ export class UpdateMissionHandler implements ICommandHandler<UpdateMissionComman
       {
         ...(command.name !== undefined && { name: command.name }),
         ...(command.xpGranted !== undefined && { xpGranted: command.xpGranted }),
+        ...(command.durationDays !== undefined && { durationDays: command.durationDays }),
       },
     );
     return this.missionRepo.findOneBy({ id: command.id });

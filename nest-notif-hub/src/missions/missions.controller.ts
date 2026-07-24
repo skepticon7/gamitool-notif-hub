@@ -11,7 +11,9 @@ import {
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { MissionActionDto } from './dto/mission-action.dto';
 import { MissionAssignmentFiltersDto } from './dto/mission-assignment-filters.dto';
+import { BulkAssignMissionDto } from './dto/bulk-assign-mission.dto';
 import { AssignMissionCommand } from './commands/assign-mission.command';
+import { BulkAssignMissionCommand } from './commands/bulk-assign-mission.command';
 import { CompleteMissionCommand } from './commands/complete-mission.command';
 import { GetMyMissionAssignmentsQuery } from './queries/get-my-mission-assignments.query';
 import { JwtAuthGuard } from '../shared/guards/jwt-auth.guard';
@@ -36,6 +38,16 @@ export class MissionsController {
     return this.commandBus.execute(
       new AssignMissionCommand(dto.missionId, dto.employeeId),
     );
+  }
+
+  // Admin-only, same trust reasoning as /assign — assigns to every current
+  // employee in one call. Already-assigned employees are silently skipped,
+  // not treated as a failure — see BulkAssignMissionHandler.
+  @Post('assign-all')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  assignAll(@Body() dto: BulkAssignMissionDto) {
+    return this.commandBus.execute(new BulkAssignMissionCommand(dto.missionId));
   }
 
   // Owner-or-admin. With users/employees on one STI table, the caller's own

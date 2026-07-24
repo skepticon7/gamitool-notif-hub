@@ -48,4 +48,12 @@ export class MissionAssignmentEntity {
   @Column({ type: 'datetime', nullable: true })
   completedAt: Date | null;
 
+  // Computed once at assignment time from mission.durationDays (assignedAt +
+  // duration) and stored here rather than derived on read — so an admin
+  // later editing the mission's duration never shifts the deadline out from
+  // under assignments that already exist. Null if the mission has no
+  // duration set, meaning this assignment never expires.
+  @Column({ type: 'datetime', nullable: true })
+  deadline: Date | null;
+
 }

@@ -16,9 +16,12 @@ import { MissionAssignmentEntity } from './entities/mission-assignment.entity';
 import { QueryCacheInvalidator } from '../shared/cache/query-cache-invalidator.service';
 import { UserEntity } from '../users/entities/user.entity';
 import { EmployeeUserEntity } from '../users/entities/employee-user.entity';
+import { MissionExpirySweepService } from './services/mission-expiry-sweep.service';
+import { BulkAssignMissionHandler } from './handlers/bulk-assign-mission.handler';
 
 const CommandHandlers = [
   AssignMissionHandler,
+  BulkAssignMissionHandler,
   CompleteMissionHandler,
   CreateMissionHandler,
   UpdateMissionHandler,
@@ -37,6 +40,6 @@ const QueryHandlers = [
     TypeOrmModule.forFeature([MissionEntity, MissionAssignmentEntity , EmployeeUserEntity]),
   ],
   controllers: [MissionsController],
-  providers: [...CommandHandlers, ...QueryHandlers, QueryCacheInvalidator],
+  providers: [...CommandHandlers, ...QueryHandlers, QueryCacheInvalidator, MissionExpirySweepService],
 })
 export class MissionsModule {}

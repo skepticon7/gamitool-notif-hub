@@ -3,6 +3,9 @@ import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Job } from 'bullmq';
 import axios from 'axios';
+import { randomUUID } from 'node:crypto';
+import { DataSource } from 'typeorm';
+import { OutboxRepository } from '../../outbox/repositories/outbox.repository';
 
 // --- What this is, for context (first time touching n8n) ---
 //
@@ -94,7 +97,11 @@ import axios from 'axios';
 export class N8nProcessor extends WorkerHost {
   private readonly logger = new Logger(N8nProcessor.name);
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly dataSource: DataSource,
+    private readonly outboxRepository: OutboxRepository,
+  ) {
     super();
   }
 
@@ -130,11 +137,65 @@ export class N8nProcessor extends WorkerHost {
     );
 
     if (response.status < 200 || response.status >= 300) {
+      const errorReason = `n8n webhook returned ${response.status} for channel "${channel}": ${JSON.stringify(response.data)}`;
+
+      // Only record NotificationFailed once retries are exhausted — job
+      // .attemptsMade is the count *before* this attempt, so +1 accounts for
+      // the one currently in progress. A transient failure that succeeds on
+      // attempt 2 should never leave behind a false "failed" record.
+      const isFinalAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
+      if (isFinalAttempt) {
+        // Same isolation reasoning as the success-path write below: this is
+        // a secondary tracking write, and its own failure must never change
+        // what gets thrown here or whether it throws at all.
+        try {
+          await this.outboxRepository.create(this.dataSource.manager, {
+            eventType: 'NotificationFailed',
+            eventId: randomUUID(),
+            correlationId,
+            causationId: sourceEventId,
+            aggregateType: 'Notification',
+            aggregateId: employeeId,
+            occurredOn: new Date(),
+            payload: { employeeId, channel, correlationId, sourceEventId, errorReason },
+          });
+        } catch (error) {
+          this.logger.warn(
+            `Failed to record NotificationFailed for ${correlationId}: ${error instanceof Error ? error.message : error}`,
+          );
+        }
+      }
+
       // Throwing here is what makes BullMQ treat this as a failed attempt
       // and retry it with backoff (configured where this job is enqueued in
       // NotifyAction) — same as a real SMTP/Twilio failure would.
-      throw new Error(
-        `n8n webhook returned ${response.status} for channel "${channel}": ${JSON.stringify(response.data)}`,
+      throw new Error(errorReason);
+    }
+
+    // Delivered successfully — record it in EDEN's own event stream so this
+    // is queryable/wireable later (e.g. an admin "recent notifications"
+    // view), not just visible inside n8n's own Executions log.
+    //
+    // Deliberately isolated in its own try/catch: the actual send already
+    // succeeded by this point, so a failure writing the tracking record must
+    // never be allowed to fail this job — that would make BullMQ retry it,
+    // which means calling n8n again and sending a real duplicate SMS/email
+    // over what's ultimately just a bookkeeping write. Losing one tracking
+    // record on a rare DB hiccup is an acceptable trade against that.
+    try {
+      await this.outboxRepository.create(this.dataSource.manager, {
+        eventType: 'NotificationDelivered',
+        eventId: randomUUID(),
+        correlationId,
+        causationId: sourceEventId,
+        aggregateType: 'Notification',
+        aggregateId: employeeId,
+        occurredOn: new Date(),
+        payload: { employeeId, channel, correlationId, sourceEventId },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Failed to record NotificationDelivered for ${correlationId} (delivery itself succeeded): ${error instanceof Error ? error.message : error}`,
       );
     }
 

@@ -19,7 +19,7 @@ export class GetMyMissionAssignmentsHandler
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
-  @CacheableQuery(30)
+  @CacheableQuery(300)
   execute(query: GetMyMissionAssignmentsQuery) {
     return this.repo.find({
       where: { ...buildAssignmentWhere(query), employeeId: query.employeeId },

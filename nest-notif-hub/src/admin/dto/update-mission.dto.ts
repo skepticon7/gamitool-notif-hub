@@ -9,4 +9,9 @@ export class UpdateMissionDto {
   @IsInt()
   @Min(0)
   xpGranted?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  durationDays?: number;
 }

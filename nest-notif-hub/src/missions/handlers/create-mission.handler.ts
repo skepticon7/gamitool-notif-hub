@@ -16,6 +16,7 @@ export class CreateMissionHandler implements ICommandHandler<CreateMissionComman
       this.missionRepo.create({
         name: command.name,
         xpGranted: command.xpGranted,
+        durationDays: command.durationDays ?? null,
       }),
     );
   }

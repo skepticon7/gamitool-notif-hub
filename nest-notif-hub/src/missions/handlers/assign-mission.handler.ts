@@ -9,6 +9,7 @@ import { BusinessException } from '../../shared/exceptions/business.exception';
 import { HttpStatus } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { EmployeeUserEntity } from '../../users/entities/employee-user.entity';
+import { MissionEntity } from '../entities/mission.entity';
 
 @CommandHandler(AssignMissionCommand)
 export class AssignMissionHandler implements ICommandHandler<AssignMissionCommand> {
@@ -16,6 +17,8 @@ export class AssignMissionHandler implements ICommandHandler<AssignMissionComman
     private readonly dataSource: DataSource,
     @InjectRepository(EmployeeUserEntity)
     private readonly employeeUserEntityRepository: Repository<EmployeeUserEntity>,
+    @InjectRepository(MissionEntity)
+    private readonly missionRepo: Repository<MissionEntity>,
     private readonly outboxRepository: OutboxRepository,
     @InjectRepository(MissionAssignmentEntity)
     private readonly missionAssignmentRepo: Repository<MissionAssignmentEntity>,
@@ -35,6 +38,18 @@ export class AssignMissionHandler implements ICommandHandler<AssignMissionComman
       );
     }
 
+    // Needed for its durationDays (to compute this assignment's deadline)
+    // — also now doubles as a clean 404 for a bad missionId, instead of
+    // relying on the FK constraint to reject the insert further down.
+    const mission = await this.missionRepo.findOneBy({ id: command.missionId });
+    if (!mission) {
+      throw new BusinessException(
+        'NOT_FOUND',
+        `Mission with id : ${command.missionId} not found`,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
     const assignmentCheck = await this.missionAssignmentRepo.findOneBy({
       missionId: command.missionId,
       employeeId: command.employeeId,
@@ -50,6 +65,12 @@ export class AssignMissionHandler implements ICommandHandler<AssignMissionComman
     }
 
     const assignmentId = randomUUID();
+    const assignedAt = new Date();
+    // Computed once, here, from the mission's duration — not derived later
+    // on read. See MissionAssignmentEntity.deadline for why.
+    const deadline = mission.durationDays
+      ? new Date(assignedAt.getTime() + mission.durationDays * 24 * 60 * 60 * 1000)
+      : null;
 
     // Both writes commit together or not at all — same reasoning as every
     // other transaction in this codebase: a crash between them must never
@@ -63,8 +84,9 @@ export class AssignMissionHandler implements ICommandHandler<AssignMissionComman
         missionId: command.missionId,
         employeeId: command.employeeId,
         status: 'ASSIGNED',
-        assignedAt: new Date(),
+        assignedAt,
         completedAt: null,
+        deadline,
       });
 
       await this.outboxRepository.create(manager, {

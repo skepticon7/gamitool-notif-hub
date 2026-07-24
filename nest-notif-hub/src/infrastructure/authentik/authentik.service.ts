@@ -82,7 +82,7 @@ export class AuthentikService {
     const jar = new CookieJar();
     const instance = wrapper(
       axios.create({
-        baseURL: this.configService.getOrThrow<string>('AUTHENTIK_URL'),
+        baseURL: 'http://localhost:9000',
         jar,
         withCredentials: true,
         validateStatus: () => true,

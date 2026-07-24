@@ -19,6 +19,12 @@ export class MissionEntity {
   @Column()
   name: string;
 
+  // Null means this mission never expires — assignments computed from it
+  // get deadline: null too. See AssignMissionHandler for where this turns
+  // into an absolute per-assignment deadline.
+  @Column({ type: 'int', nullable: true })
+  durationDays: number | null;
+
   @OneToMany(() => MissionAssignmentEntity , (missionConcerned) => missionConcerned.mission)
   missionAssignments: MissionAssignmentEntity[]
 

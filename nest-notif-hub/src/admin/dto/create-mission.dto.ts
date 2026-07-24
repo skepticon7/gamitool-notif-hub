@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsString, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateMissionDto {
   @IsString()
@@ -8,4 +8,9 @@ export class CreateMissionDto {
   @IsInt()
   @Min(0)
   xpGranted: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  durationDays?: number;
 }

@@ -31,13 +31,13 @@ export class MissionCatalogController {
 
   @Post()
   create(@Body() dto: CreateMissionDto) {
-    return this.commandBus.execute(new CreateMissionCommand(dto.name, dto.xpGranted));
+    return this.commandBus.execute(new CreateMissionCommand(dto.name, dto.xpGranted, dto.durationDays));
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateMissionDto) {
     return this.commandBus.execute(
-      new UpdateMissionCommand(id, dto.name, dto.xpGranted),
+      new UpdateMissionCommand(id, dto.name, dto.xpGranted, dto.durationDays),
     );
   }
 
