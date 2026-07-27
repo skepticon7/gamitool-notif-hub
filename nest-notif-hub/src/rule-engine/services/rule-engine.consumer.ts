@@ -15,6 +15,7 @@ import { ActionRegistry } from '../actions/action-registry';
 import { ActionResult } from '../actions/action.interface';
 import { OutboxRepository } from '../../outbox/repositories/outbox.repository';
 import { RulesCache } from './rules-cache';
+import { OutboxProcessor } from '../../outbox/services/outbox.processor';
 
 const CONSUMER_GROUP = 'rule-engine';
 const CONSUMER_NAME = `consumer-${process.pid}`;
@@ -35,6 +36,7 @@ export class RuleEngineConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly processedEventRepo: Repository<ProcessedEventsEntity>,
     private readonly actionRegistry: ActionRegistry,
     private readonly outboxRepository: OutboxRepository,
+    private readonly outboxProcessor : OutboxProcessor,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -81,6 +83,8 @@ export class RuleEngineConsumer implements OnModuleInit, OnModuleDestroy {
           'Rule engine read loop failed',
           error instanceof Error ? error.stack : String(error),
         );
+        await this.ensureConsumerGroup();
+        await this.outboxProcessor.replayRecent();
       }
     }
   }

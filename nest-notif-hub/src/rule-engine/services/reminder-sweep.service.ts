@@ -5,6 +5,7 @@ import { DataSource, Repository } from 'typeorm';
 import { randomUUID } from 'node:crypto';
 import { ScheduledReminderEntity } from '../entities/scheduled-reminder.entity';
 import { OutboxRepository } from '../../outbox/repositories/outbox.repository';
+import { MissionEntity } from '../../missions/entities/mission.entity';
 
 const SWEEP_BATCH_SIZE = 100;
 
@@ -21,6 +22,8 @@ export class ReminderSweepService {
     @InjectRepository(ScheduledReminderEntity)
     private readonly reminderRepo: Repository<ScheduledReminderEntity>,
     private readonly outboxRepository: OutboxRepository,
+    @InjectRepository(MissionEntity)
+    private readonly missionRepository: Repository<MissionEntity>,
     private readonly dataSource: DataSource,
   ) {}
 

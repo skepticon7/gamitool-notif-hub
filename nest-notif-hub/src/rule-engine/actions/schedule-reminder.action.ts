@@ -19,6 +19,9 @@ export class ScheduleReminderAction implements Action {
     params: Record<string, any>,
     context: ActionContext,
   ): Promise<ActionResult> {
+    if(payload.deadline === null) {
+      return {shouldEmit : false}
+    }
     const delayMs = Number(params.delaySeconds ?? 120) * 1000;
     const repo : Repository<ScheduledReminderEntity> = context.manager ? context.manager.withRepository(this.reminderRepo) : this.reminderRepo;
     await repo.insert({

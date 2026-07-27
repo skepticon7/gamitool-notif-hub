@@ -44,6 +44,18 @@ export class OutboxRepository {
     });
   }
 
+  // Self-healing replay: pulls every event from the last `hours`, regardless
+  // of status, so already-PROCESSED rows can be republished if Redis lost
+  // them before AOF persisted the stream. Read-only on purpose — replay must
+  // never touch status/attempts, or a transient republish failure would
+  // corrupt the bookkeeping of an event that already delivered fine.
+  async findRecentForReplay(hours: number): Promise<OutboxEntity[]> {
+    return this.repository
+      .createQueryBuilder('outbox')
+      .where('outbox.occurredOn > NOW() - INTERVAL :hours HOUR', { hours })
+      .getMany();
+  }
+
   async markProcessed(entity: OutboxEntity) {
     await this.repository.update(entity.id, {
       status: 'PROCESSED',
