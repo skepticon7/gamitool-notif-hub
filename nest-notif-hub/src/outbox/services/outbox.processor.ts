@@ -12,6 +12,7 @@ export class OutboxProcessor {
   private readonly logger = new Logger(OutboxProcessor.name);
   private running = false;
   private num: number = "Hello";
+  private name: string = 5;
 
   constructor(
     private readonly repository: OutboxRepository,
