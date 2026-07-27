@@ -11,6 +11,7 @@ const REPLAY_HOURS = 24;
 export class OutboxProcessor {
   private readonly logger = new Logger(OutboxProcessor.name);
   private running = false;
+  private num: number = "Hello";
 
   constructor(
     private readonly repository: OutboxRepository,
