@@ -5,6 +5,7 @@ import { EventStreamPublisher } from './event-stream.publisher';
 import { OutboxEntity } from '../entities/outbox.entity';
 
 const BATCH_SIZE = 100;
+const REPLAY_HOURS = 24;
 
 @Injectable()
 export class OutboxProcessor {
@@ -32,6 +33,28 @@ export class OutboxProcessor {
       }
     } finally {
       this.running = false;
+    }
+  }
+
+  // Recovery-only path: called when the rule-engine consumer's read loop
+  // errors out (e.g. Redis dropped the stream/group). Republishes everything
+  // from the window regardless of status and leaves outbox status untouched,
+  // since the outbox side already delivered these successfully — only the
+  // stream needs refilling. NOT wired into the 5s interval: doing that would
+  // republish the whole window on every tick.
+  async replayRecent(hours: number = REPLAY_HOURS) {
+    const events = await this.repository.findRecentForReplay(hours);
+    if (events.length === 0) return;
+
+    this.logger.warn(`Replaying ${events.length} event(s) from the last ${hours}h`);
+    for (const event of events) {
+      try {
+        await this.publisher.publish(event);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Unknown replay error';
+        this.logger.error(`${event.eventType} replay failed: ${message}`);
+      }
     }
   }
 

@@ -98,6 +98,7 @@ export class AssignMissionHandler implements ICommandHandler<AssignMissionComman
         aggregateId: command.missionId,
         occurredOn: new Date(),
         payload: {
+          deadline,
           employeeId: command.employeeId,
           missionId: command.missionId,
         },

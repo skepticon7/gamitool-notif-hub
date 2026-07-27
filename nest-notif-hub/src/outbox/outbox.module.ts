@@ -14,7 +14,7 @@ import { UserCreatedBuilder } from './builders/user-created.builder';
     TypeOrmModule.forFeature([OutboxEntity])
   ],
   providers : [UserCreatedBuilder , OutboxRepository , OutboxProcessor , OutboxEventFactory , EventStreamPublisher],
-  exports : [OutboxRepository , OutboxEventFactory , TypeOrmModule]
+  exports : [OutboxRepository , OutboxEventFactory , OutboxProcessor , TypeOrmModule]
 })
 
 

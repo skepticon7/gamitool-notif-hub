@@ -1,0 +1,40 @@
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - main
+      - "feature/**"
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  backend:
+    name: Build and Test Backend
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: nest-notif-hub
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26.5.0
+          cache: npm
+          cache-dependency-path: nest-notif-hub/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+     # - name: Run tests
+      #  run: npm test
+
+      - name: Build application
+        run: npm run build

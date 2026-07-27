@@ -1,0 +1,64 @@
+# Entry point for the gamitool-notif-hub POC's supporting infrastructure.
+# Authentik itself lives in its own compose project (/data/apps/authentik) —
+# this file only holds what the POC backend needs around it. Add new
+# containers (BullMQ dashboards, mock SMTP, etc.) here as the POC grows.
+services:
+  redis:
+    image: docker.io/library/redis:7-alpine
+    container_name: gamitool-redis
+    restart: unless-stopped
+    ports:
+    - 6379:6379
+    volumes:
+    - redis-data:/data
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+
+
+  # Tunnels the NestJS dev server (running on the host, PORT from
+  # nest-notif-hub/.env) so Authentik's redirect_uri can reach it.
+  ngrok-nest:
+    image: docker.io/ngrok/ngrok:alpine
+    container_name: ngrok-nest
+    command: ["http", "host.docker.internal:8080"]
+    env_file:
+    - .env
+    extra_hosts:
+    - host.docker.internal:host-gateway
+    ports:
+    - 4040:4040
+    restart: unless-stopped
+
+  # Tunnels the Authentik server itself, so AUTHENTIK_URL stays reachable
+  # from the internet for the OIDC handshake.
+  ngrok-authentik:
+    image: docker.io/ngrok/ngrok:alpine
+    container_name: ngrok-authentik
+    command: ["http", "host.docker.internal:9000"]
+    env_file:
+    - .env
+    extra_hosts:
+    - host.docker.internal:host-gateway
+    ports:
+    - 4041:4040
+    restart: unless-stopped
+
+  # Backs the Notify action's non-in-app channels (email/sms/discord/...) —
+  # see nest-notif-hub/src/notifications/workers/n8n.processor.ts and
+  # N8N_WEBHOOK_BASE_URL in nest-notif-hub/.env, which points at this
+  # container's default port. The workflow itself (Webhook -> AI Agent ->
+  # Switch on channel -> per-channel send node) is built and Activated by
+  # hand in n8n's editor — it's not something this compose file manages.
+  n8n:
+    image: docker.io/n8nio/n8n:latest
+    container_name: gamitool-n8n
+    restart: unless-stopped
+    ports:
+    - 5678:5678
+    volumes:
+    - n8n-data:/home/node/.n8n
+
+volumes:
+  redis-data:
+    driver: local
+  n8n-data:
+    driver: local
