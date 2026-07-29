@@ -8,6 +8,7 @@ import { EmployeeUserEntity } from '../../users/entities/employee-user.entity';
 export class GrantXPAction implements Action {
   readonly actionType = 'GrantXP';
   readonly requiredPayloadFields = ['employeeId', 'xpGranted'];
+  readonly allowedSourceEvents = ['MissionCompleted']; // XP is granted for completing something, not for any event carrying an xpGranted-shaped field
 
   constructor(
     @InjectRepository(EmployeeUserEntity)

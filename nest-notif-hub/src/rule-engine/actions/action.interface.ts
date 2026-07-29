@@ -35,6 +35,17 @@ export interface Action {
   // "admin can wire anything" into "admin can wire anything that type-checks".
   readonly requiredPayloadFields: string[];
 
+  // Declared contract, orthogonal to the one above: which event types this
+  // action actually makes sense to be triggered BY, developer-curated —
+  // NOT just "has the right fields" (that's requiredPayloadFields' job).
+  // e.g. GrantBadge only requiring `employeeId` would let an admin wire it
+  // to MissionAssigned and have it "validate" fine, even though assignment
+  // never changes the completed-mission count GrantBadge actually checks —
+  // technically harmless, semantically pointless. This is what stops that:
+  // EventLinkGraphValidator rejects any sourceEvent not in this list.
+  // '*' means "genuinely generic, no restriction" (e.g. Notify, EmitEvent).
+  readonly allowedSourceEvents: string[];
+
   execute(
     payload: Record<string, any>,
     params: Record<string, any>,

@@ -10,11 +10,15 @@ import {
 } from '../../rule-engine/actions/action.interface';
 import { EmployeeUserEntity } from '../../users/entities/employee-user.entity';
 import { NotificationChannel } from '../notifications.constants';
+import { interpolateTemplate } from '../services/interpolate-template';
+
+const DEFAULT_MESSAGE_TEMPLATE = 'Notification for {{name}}';
 
 @Injectable()
 export class NotifyAction implements Action {
   readonly actionType = 'Notify';
   readonly requiredPayloadFields = ['employeeId'];
+  readonly allowedSourceEvents = ['*']; // genuinely generic — "tell someone something happened" applies to almost any event
   private readonly logger = new Logger(NotifyAction.name);
 
   constructor(
@@ -45,7 +49,13 @@ export class NotifyAction implements Action {
     const employee = await this.employeeRepo.findOneByOrFail({
       id: employeeId,
     });
-    const message = params.message ?? `Notification for ${employee.name}`;
+    // params.message is an admin-authored template (e.g. "Reminder:
+    // {{missionName}} expires in {{daysLeft}} day(s)") — every event type
+    // goes through the same interpolation, not just reminders. Which
+    // {{fields}} are actually valid for a given wiring is enforced at
+    // wiring time by EventLinkGraphValidator, not here.
+    const template = params.message ?? DEFAULT_MESSAGE_TEMPLATE;
+    const message = interpolateTemplate(template, { ...payload, name: employee.name });
 
     for (const channel of channels) {
       if (!this.hasDeliverableContact(employee, channel)) {
@@ -71,6 +81,7 @@ export class NotifyAction implements Action {
           {
             channel,
             employeeId,
+            kind: params.kind ?? 'general',
             recipient: employee.id,
             message,
             correlationId: context.correlationId,

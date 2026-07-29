@@ -8,6 +8,10 @@ import { ScheduledReminderEntity } from '../entities/scheduled-reminder.entity';
 export class CancelReminderAction implements Action {
   readonly actionType = 'CancelReminder';
   readonly requiredPayloadFields = ['employeeId', 'missionId'];
+  // Both completion AND expiry should stop a pending reminder — a reminder
+  // firing for a mission that's already expired would say "expires in N
+  // days" about something that's already past due.
+  readonly allowedSourceEvents = ['MissionCompleted', 'MissionExpired'];
 
   constructor(
     @InjectRepository(ScheduledReminderEntity)

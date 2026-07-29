@@ -1,11 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
-import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { InjectRepository  } from '@nestjs/typeorm';
+import { DataSource, Repository , In } from 'typeorm';
 import { randomUUID } from 'node:crypto';
 import { MissionAssignmentEntity } from '../entities/mission-assignment.entity';
 import { OutboxRepository } from '../../outbox/repositories/outbox.repository';
 import { QueryCacheInvalidator } from '../../shared/cache/query-cache-invalidator.service';
+import { MissionEntity } from '../entities/mission.entity';
 
 const SWEEP_BATCH_SIZE = 100;
 
@@ -24,16 +25,20 @@ export class MissionExpirySweepService {
     private readonly outboxRepository: OutboxRepository,
     private readonly dataSource: DataSource,
     private readonly queryCacheInvalidator: QueryCacheInvalidator,
+    @InjectRepository(MissionEntity)
+    private readonly missionRepository : Repository<MissionEntity>
   ) {}
 
   @Interval(30000)
   async sweep() {
     const overdue = await this.claimOverdueBatch();
     if (overdue.length === 0) return;
-
+    const missionIds: string[] = [...new Set(overdue.map((a) => a.missionId))];
+    const missions: MissionEntity[] = await this.missionRepository.findBy({id: In(missionIds)});
+    const missionNameById = new Map(missions.map((m) => [m.id , m.name]));
     this.logger.log(`Expiring ${overdue.length} overdue assignment(s)`);
     for (const assignment of overdue) {
-      await this.expire(assignment);
+      await this.expire(assignment , missionNameById.get(assignment.missionId));
     }
   }
 
@@ -54,7 +59,7 @@ export class MissionExpirySweepService {
     });
   }
 
-  private async expire(assignment: MissionAssignmentEntity) {
+  private async expire(assignment: MissionAssignmentEntity , missionName? : string) {
     try {
       // The status flip and the emitted event commit together or not at
       // all — same reasoning as everywhere else: a crash between the two
@@ -73,6 +78,7 @@ export class MissionExpirySweepService {
           aggregateId: assignment.missionId,
           occurredOn: new Date(),
           payload: {
+            missionName,
             employeeId: assignment.employeeId,
             missionId: assignment.missionId,
             assignmentId: assignment.id,

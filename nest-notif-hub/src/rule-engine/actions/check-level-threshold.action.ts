@@ -8,6 +8,7 @@ import { EmployeeUserEntity } from '../../users/entities/employee-user.entity';
 export class CheckLevelThresholdAction implements Action {
   readonly actionType = 'CheckLevelThreshold';
   readonly requiredPayloadFields = ['employeeId'];
+  readonly allowedSourceEvents = ['XPGranted']; // level is derived from total XP, so this only makes sense right after XP actually changed
 
   constructor(
     @InjectRepository(EmployeeUserEntity)

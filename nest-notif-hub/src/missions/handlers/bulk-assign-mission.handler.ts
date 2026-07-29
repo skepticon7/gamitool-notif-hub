@@ -1,12 +1,14 @@
 import { CommandBus, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { HttpStatus } from '@nestjs/common';
+import { DataSource, In, Repository } from 'typeorm';
+import { HttpStatus, Inject } from '@nestjs/common';
 import { BulkAssignMissionCommand } from '../commands/bulk-assign-mission.command';
 import { AssignMissionCommand } from '../commands/assign-mission.command';
 import { EmployeeUserEntity } from '../../users/entities/employee-user.entity';
 import { MissionEntity } from '../entities/mission.entity';
 import { BusinessException } from '../../shared/exceptions/business.exception';
+import { OutboxRepository } from '../../outbox/repositories/outbox.repository';
+import { randomUUID } from 'node:crypto';
 
 // Deliberately reuses AssignMissionCommand per employee via CommandBus,
 // rather than a bespoke bulk-insert — this way every safety check
@@ -23,6 +25,8 @@ export class BulkAssignMissionHandler implements ICommandHandler<BulkAssignMissi
     private readonly employeeRepo: Repository<EmployeeUserEntity>,
     @InjectRepository(MissionEntity)
     private readonly missionRepo: Repository<MissionEntity>,
+    private readonly dataSource: DataSource,
+    private readonly outboxRepository : OutboxRepository
   ) {}
 
   async execute(command: BulkAssignMissionCommand) {
@@ -35,7 +39,9 @@ export class BulkAssignMissionHandler implements ICommandHandler<BulkAssignMissi
       );
     }
 
-    const employees = await this.employeeRepo.find();
+    const employees = command.employeeIds
+      ? await this.employeeRepo.findBy({ id: In(command.employeeIds) })
+      : await this.employeeRepo.find();
 
     let assigned = 0;
     let skipped = 0;
@@ -51,6 +57,24 @@ export class BulkAssignMissionHandler implements ICommandHandler<BulkAssignMissi
         skipped++;
       }
     }
+
+    await this.outboxRepository.create(this.dataSource.manager, {
+      eventType: 'MissionBulkAssigned',
+      eventId: randomUUID(),
+      correlationId: randomUUID(),
+      causationId: null,
+      aggregateType: 'Mission',
+      aggregateId: command.missionId,
+      occurredOn: new Date(),
+      payload: {
+        missionId: command.missionId,
+        missionName: mission.name,
+        assignedCount: assigned,
+        skippedCount: skipped,
+        totalEmployees: employees.length,
+      },
+    });
+
 
     return { missionId: command.missionId, totalEmployees: employees.length, assigned, skipped };
   }

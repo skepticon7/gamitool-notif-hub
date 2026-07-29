@@ -20,6 +20,7 @@ export class CreateEventLinkHandler implements ICommandHandler<CreateEventLinkCo
       sourceEvent: command.sourceEvent,
       action: command.action,
       targetEvent: command.targetEvent ?? null,
+      params: command.params,
     });
 
     const saved = await this.repo.save(

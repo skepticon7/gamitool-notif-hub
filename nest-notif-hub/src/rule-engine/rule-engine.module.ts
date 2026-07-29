@@ -17,6 +17,7 @@ import { ScheduleReminderAction } from './actions/schedule-reminder.action';
 import { CancelReminderAction } from './actions/cancel-reminder.action';
 import { GrantBadgeAction } from './actions/grant-badge.action';
 import { MissionAssignmentEntity } from '../missions/entities/mission-assignment.entity';
+import { MissionEntity } from '../missions/entities/mission.entity';
 import { OutboxModule } from '../outbox/outbox.module';
 import { UsersModule } from '../users/users.module';
 import { BadgesModule } from '../badges/badges.module';
@@ -26,24 +27,22 @@ import { CreateEventLinkHandler } from './handlers/create-event-link.handler';
 import { UpdateEventLinkHandler } from './handlers/update-event-link.handler';
 import { DeleteEventLinkHandler } from './handlers/delete-event-link.handler';
 import { GetEventLinksHandler } from './handlers/get-event-links.handler';
-import { CreateEventCatalogHandler } from './handlers/create-event-catalog.handler';
-import { UpdateEventCatalogHandler } from './handlers/update-event-catalog.handler';
-import { DeleteEventCatalogHandler } from './handlers/delete-event-catalog.handler';
 import { GetEventCatalogHandler } from './handlers/get-event-catalog.handler';
+import { EventCatalogSeedService } from './services/event-catalog-seed.service';
 
+// Event catalog mutation (create/update/delete) is deliberately gone —
+// the catalog is developer-owned via EVENT_CATALOG_SEED, not admin-edited.
+// See EventCatalogSeedService and EventCatalogController.
 const CommandHandlers = [
   CreateEventLinkHandler,
   UpdateEventLinkHandler,
   DeleteEventLinkHandler,
-  CreateEventCatalogHandler,
-  UpdateEventCatalogHandler,
-  DeleteEventCatalogHandler,
 ];
 const QueryHandlers = [GetEventLinksHandler, GetEventCatalogHandler];
 
 @Module({
   imports : [
-    TypeOrmModule.forFeature([EventCatalogEntity , EventLinkEntity , ProcessedEventsEntity , ScheduledReminderEntity , MissionAssignmentEntity]),
+    TypeOrmModule.forFeature([EventCatalogEntity , EventLinkEntity , ProcessedEventsEntity , ScheduledReminderEntity , MissionAssignmentEntity , MissionEntity]),
     CqrsModule,
     OutboxModule,
     UsersModule,
@@ -62,6 +61,7 @@ const QueryHandlers = [GetEventLinksHandler, GetEventCatalogHandler];
     ScheduleReminderAction,
     CancelReminderAction,
     GrantBadgeAction,
+    EventCatalogSeedService,
     ...CommandHandlers,
     ...QueryHandlers,
     {
