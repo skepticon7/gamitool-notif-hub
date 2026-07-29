@@ -5,6 +5,7 @@ import {
   EmployeeProjection,
   EmployeeProjectionSchema,
 } from './schemas/employee-projection.schema';
+import { OutboxModule } from '../outbox/outbox.module';
 
 // Purely the Mongo read-model projection now — the SQL Employee entity moved
 // to users/entities/employee-user.entity.ts (Single Table Inheritance with
@@ -12,6 +13,7 @@ import {
 @Module({
   imports: [
     MongooseModule.forFeature([{name : EmployeeProjection.name , schema : EmployeeProjectionSchema}]),
+    OutboxModule,
   ],
   providers : [EmployeeProjectionConsumer],
 })

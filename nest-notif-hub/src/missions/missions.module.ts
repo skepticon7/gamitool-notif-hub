@@ -17,7 +17,13 @@ import { QueryCacheInvalidator } from '../shared/cache/query-cache-invalidator.s
 import { UserEntity } from '../users/entities/user.entity';
 import { EmployeeUserEntity } from '../users/entities/employee-user.entity';
 import { MissionExpirySweepService } from './services/mission-expiry-sweep.service';
+import { MissionRecurrenceSweepService } from './services/mission-recurrence-sweep.service';
 import { BulkAssignMissionHandler } from './handlers/bulk-assign-mission.handler';
+import { MissionSchedulmentEntity } from './entities/mission-schedulment.entity';
+import { CreateSchedulmentHandler } from './handlers/create-schedulment.handler';
+import { UpdateSchedulmentHandler } from './handlers/update-schedulment.handler';
+import { CancelSchedulmentHandler } from './handlers/cancel-schedulment.handler';
+import { GetSchedulmentsHandler } from './handlers/get-schedulments.handler';
 
 const CommandHandlers = [
   AssignMissionHandler,
@@ -26,20 +32,35 @@ const CommandHandlers = [
   CreateMissionHandler,
   UpdateMissionHandler,
   DeleteMissionHandler,
+  CreateSchedulmentHandler,
+  UpdateSchedulmentHandler,
+  CancelSchedulmentHandler,
 ];
 const QueryHandlers = [
   GetAllMissionsHandler,
   GetMissionAssignmentsHandler,
   GetMyMissionAssignmentsHandler,
+  GetSchedulmentsHandler,
 ];
 
 @Module({
   imports: [
     CqrsModule,
     OutboxModule,
-    TypeOrmModule.forFeature([MissionEntity, MissionAssignmentEntity , EmployeeUserEntity]),
+    TypeOrmModule.forFeature([
+      MissionEntity,
+      MissionAssignmentEntity,
+      EmployeeUserEntity,
+      MissionSchedulmentEntity,
+    ]),
   ],
   controllers: [MissionsController],
-  providers: [...CommandHandlers, ...QueryHandlers, QueryCacheInvalidator, MissionExpirySweepService],
+  providers: [
+    ...CommandHandlers,
+    ...QueryHandlers,
+    QueryCacheInvalidator,
+    MissionExpirySweepService,
+    MissionRecurrenceSweepService,
+  ],
 })
 export class MissionsModule {}

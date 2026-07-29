@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './shared/filters/global-exception.filter';
 import session from 'express-session';
@@ -7,6 +8,11 @@ import passport from 'passport';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  // Without this, NotificationGateway's engine.io instance doesn't attach to
+  // the app's own HTTP server — it silently spins up a standalone server on
+  // a random OS-assigned port instead, and app.listen(PORT) below never
+  // actually binds the port everyone expects it to.
+  app.useWebSocketAdapter(new IoAdapter(app));
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.use(
     session({

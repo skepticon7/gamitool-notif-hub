@@ -13,6 +13,7 @@ import {
   EmployeeProjectionDocument,
 } from '../schemas/employee-projection.schema';
 import { Model } from 'mongoose';
+import { OutboxProcessor } from '../../outbox/services/outbox.processor';
 
 const CONSUMER_GROUP = 'employees-projection'
 const CONSUMER_NAME = `process-${process.pid}`;
@@ -33,6 +34,7 @@ export class EmployeeProjectionConsumer
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
     @InjectModel(EmployeeProjection.name)
     private readonly employeeModel: Model<EmployeeProjectionDocument>,
+    private readonly outboxProcessor: OutboxProcessor,
   ) {}
 
   async onModuleInit() {
@@ -76,6 +78,8 @@ export class EmployeeProjectionConsumer
           'employees projection consumer read loop failed',
           error instanceof Error ? error.stack : String(error),
         );
+        await this.ensureConsumerGroup();
+        await this.outboxProcessor.replayRecent();
       }
     }
   }

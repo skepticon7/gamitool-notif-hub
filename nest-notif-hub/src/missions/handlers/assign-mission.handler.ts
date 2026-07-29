@@ -101,6 +101,9 @@ export class AssignMissionHandler implements ICommandHandler<AssignMissionComman
           deadline,
           employeeId: command.employeeId,
           missionId: command.missionId,
+          missionName: mission.name,
+          assignmentId,
+          durationDays: mission.durationDays,
         },
       });
 

@@ -16,6 +16,7 @@ import { BadgeEntity } from '../../badges/entities/badge.entity';
 export class GrantBadgeAction implements Action {
   readonly actionType = 'GrantBadge';
   readonly requiredPayloadFields = ['employeeId'];
+  readonly allowedSourceEvents = ['MissionCompleted']; // badge thresholds are checked against the completed-mission count, which only changes on completion
 
   constructor(
     @InjectRepository(EmployeeBadgeEntity)

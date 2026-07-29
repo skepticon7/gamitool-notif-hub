@@ -12,6 +12,7 @@ import { RuleEngineModule } from './rule-engine/rule-engine.module';
 import { AdminModule } from './admin/admin.module';
 import { MissionsModule } from './missions/missions.module';
 import { EmployeesModule } from './employees/employees.module';
+import { ActivityFeedModule } from './activity-feed/activity-feed.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { EmployeesModule } from './employees/employees.module';
     AdminModule,
     MissionsModule,
     EmployeesModule,
+    ActivityFeedModule,
   ],
 })
 export class AppModule {}

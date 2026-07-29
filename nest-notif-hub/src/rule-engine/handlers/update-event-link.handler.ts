@@ -31,15 +31,29 @@ export class UpdateEventLinkHandler implements ICommandHandler<UpdateEventLinkCo
       sourceEvent: command.sourceEvent ?? existing.sourceEvent,
       action: command.action ?? existing.action,
       targetEvent: command.targetEvent !== undefined ? command.targetEvent : existing.targetEvent,
+      params: command.params ?? existing.params,
       excludeLinkId: existing.id,
     });
 
-    await this.repo.update(command.id, {
+    const changes: Partial<EventLinkEntity> = {
       ...(command.sourceEvent !== undefined && { sourceEvent: command.sourceEvent }),
       ...(command.action !== undefined && { action: command.action }),
       ...(command.params !== undefined && { params: command.params }),
       ...(command.targetEvent !== undefined && { targetEvent: command.targetEvent }),
-    });
+    };
+
+    // TypeORM's update() throws a raw QueryFailedError ("update values are
+    // not defined") if given an empty set — surface it as a clean 400 rather
+    // than a 500, since a no-field PATCH is a client mistake, not a server bug.
+    if (Object.keys(changes).length === 0) {
+      throw new BusinessException(
+        'EMPTY_UPDATE',
+        'PATCH body must include at least one field to update',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.repo.update(command.id, changes);
     await this.rulesCache.reload();
     return this.repo.findOneBy({ id: command.id });
   }

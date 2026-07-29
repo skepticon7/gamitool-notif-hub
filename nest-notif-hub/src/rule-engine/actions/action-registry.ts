@@ -31,14 +31,19 @@ export class ActionRegistry {
   }
 
   // Same registered actions, plus each one's declared requiredPayloadFields
-  // — a future drag-and-drop wiring UI can fetch this (alongside
-  // event_catalog's payloadFields) to grey out incompatible connections
-  // client-side, using the exact same contract EventLinkGraphValidator
-  // enforces server-side.
-  listWithMetadata(): { actionType: string; requiredPayloadFields: string[] }[] {
+  // and allowedSourceEvents — a drag-and-drop wiring UI can fetch this
+  // (alongside event_catalog's payloadFields) to grey out incompatible
+  // connections client-side, using the exact same contract
+  // EventLinkGraphValidator enforces server-side.
+  listWithMetadata(): {
+    actionType: string;
+    requiredPayloadFields: string[];
+    allowedSourceEvents: string[];
+  }[] {
     return Array.from(this.actions.values()).map((action) => ({
       actionType: action.actionType,
       requiredPayloadFields: action.requiredPayloadFields,
+      allowedSourceEvents: action.allowedSourceEvents,
     }));
   }
 }
