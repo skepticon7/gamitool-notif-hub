@@ -15,6 +15,12 @@ import { REDIS_CLIENT } from './redis.constants';
         new Redis({
           host: config.get<string>('REDIS_HOST', 'localhost'),
           port: config.get<number>('REDIS_PORT', 6379),
+          // Logical DB index (0-15, Redis default). Defaulting to 0 keeps
+          // every existing deployment's behavior unchanged — this only
+          // matters when something (e2e tests) explicitly sets REDIS_DB to
+          // get a fully separate keyspace on the same Redis server, so
+          // stream:events there can never collide with the real one.
+          db: config.get<number>('REDIS_DB', 0),
           maxRetriesPerRequest: null,
         }),
     },

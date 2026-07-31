@@ -5,5 +5,9 @@
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
-  }
+  },
+  "transformIgnorePatterns": ["node_modules/(?!(axios-cookiejar-support|http-cookie-agent|agent-base)/)"],
+  "setupFiles": ["dotenv/config", "<rootDir>/e2e-env.setup.ts"],
+  "testTimeout": 60000,
+  "maxWorkers": 1
 }
