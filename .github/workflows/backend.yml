@@ -39,6 +39,19 @@ jobs:
           --health-timeout=5s
           --health-retries=10
 
+      # Only the e2e tier needs Mongo (unit tests mock everything, integration
+      # tests only touch MySQL/Redis) — but service containers are declared
+      # once per job, so it's here alongside the other two.
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd="mongosh --quiet --eval 'db.runCommand({ping:1})'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
     defaults:
       run:
         working-directory: nest-notif-hub
@@ -51,6 +64,26 @@ jobs:
       MYSQL_DATABASE: gamitool_notif_hub
       REDIS_HOST: 127.0.0.1
       REDIS_PORT: 6379
+      # e2e-env.setup.ts overrides MYSQL_DATABASE/REDIS_DB/MONGO_URI to
+      # dedicated, isolated values before AppModule ever boots — see that
+      # file. Everything below is only for env vars it does NOT override:
+      # required for the full app to boot at all (JWT_SECRET — read via
+      # ConfigService.getOrThrow at module-init time, real app boot fails
+      # without it) or referenced by strategies/processors that are never
+      # actually exercised by the e2e suite (Authentik OIDC, n8n) but still
+      # need some string value present so their constructors don't choke on
+      # `undefined`. None of these protect anything real — same reasoning
+      # as the MySQL root password above.
+      JWT_SECRET: ci-test-jwt-secret
+      SESSION_SECRET: ci-test-session-secret
+      AUTHENTIK_URL: http://localhost:9000
+      AUTHENTIK_APP_SLUG: ci-test-app
+      CLIENT_ID: ci-test-client-id
+      CLIENT_SECRET: ci-test-client-secret
+      CALLBACK: http://localhost:3001/auth/oidc/callback
+      API_TOKEN: ci-test-api-token
+      N8N_WEBHOOK_BASE_URL: http://localhost:5678
+      N8N_WEBHOOK_SECRET: ci-test-n8n-secret
 
     steps:
       - name: Checkout repository
@@ -74,6 +107,16 @@ jobs:
 
       - name: Run integration tests
         run: npm run test:integration
+
+      # Last and slowest on purpose — boots the entire real app (HTTP +
+      # WebSocket + MySQL + Redis + Mongo, every consumer actually running).
+      # Runs after the cheaper tiers so a broken unit/integration test fails
+      # fast without paying for this one. `npm run test:e2e` auto-triggers
+      # `pretest:e2e` first (npm's pre-script convention) — resets the
+      # dedicated e2e MySQL database and Redis DB index completely fresh
+      # before every run, same as running it locally.
+      - name: Run e2e tests
+        run: npm run test:e2e
 
       - name: Build application
         run: npm run build

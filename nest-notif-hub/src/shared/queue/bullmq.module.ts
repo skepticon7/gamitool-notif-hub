@@ -14,6 +14,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         connection: {
           host: config.get<string>('REDIS_HOST', 'localhost'),
           port: config.get<number>('REDIS_PORT', 6379),
+          // Same reasoning as RedisModule's REDIS_CLIENT: must track the
+          // same logical DB, or a second app instance sharing Redis DB 0
+          // (e.g. a live dev server running concurrently) can steal and
+          // process this instance's jobs on its own worker — delivering a
+          // WebSocket push through a completely different server than the
+          // one that enqueued it.
+          db: config.get<number>('REDIS_DB', 0),
         },
       }),
     }),

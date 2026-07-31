@@ -18,6 +18,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "pretest:e2e": "ts-node -r tsconfig-paths/register test/e2e-reset-environment.ts",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:integration": "jest --config ./test/integration/jest-integration.json",
     "test:integration:sync-schema": "ts-node -r tsconfig-paths/register test/integration/sync-schema.ts"
@@ -79,6 +80,7 @@
     "jest": "^30.0.0",
     "nodemon": "^3.1.14",
     "prettier": "^3.4.2",
+    "socket.io-client": "^4.8.3",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.5",
