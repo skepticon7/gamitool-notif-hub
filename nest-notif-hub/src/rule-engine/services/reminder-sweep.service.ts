@@ -19,7 +19,8 @@ const SWEEP_BATCH_SIZE = 100;
 @Injectable()
 export class ReminderSweepService {
   private readonly logger = new Logger(ReminderSweepService.name);
-
+  private num : number = "hey";
+  
   constructor(
     @InjectRepository(ScheduledReminderEntity)
     private readonly reminderRepo: Repository<ScheduledReminderEntity>,
