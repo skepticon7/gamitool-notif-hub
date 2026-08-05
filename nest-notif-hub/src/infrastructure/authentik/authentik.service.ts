@@ -142,6 +142,59 @@ export class AuthentikService {
 
   }
 
+  // Server-to-server, same as login()/exchangeSessionForTokens() — no
+  // browser redirect involved, so this.client() (localhost:9000) is the
+  // right client, not the public AUTHENTIK_URL OidcStrategy needs.
+  //
+  // Authentik may or may not rotate the refresh token on each use
+  // (depends on the provider's refresh_token grant config) — fall back to
+  // the input token only if the response genuinely omits one.
+  async refresh(refreshToken: string): Promise<TokenResponse> {
+    const client = this.client();
+    const clientId = this.configService.getOrThrow<string>('CLIENT_ID');
+    const clientSecret = this.configService.getOrThrow<string>('CLIENT_SECRET');
+
+    const body = new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+    });
+
+    const tokenRes = await client.post<TokenResponse>(
+      '/application/o/token/',
+      body,
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
+    );
+
+    // Authentik responds 400 invalid_grant for an expired/revoked/unknown
+    // refresh token — a real, expected client condition (session expiry),
+    // not an infra failure. Distinguished from AUTHENTIK_ERROR below the
+    // same way login() distinguishes AUTHENTIK_INVALID_CREDENTIALS from a
+    // generic Authentik failure — so the frontend can tell "log in again"
+    // apart from "something's actually broken."
+    if (tokenRes.status === 400) {
+      throw new BusinessException(
+        'INVALID_REFRESH_TOKEN',
+        'Refresh token is invalid or expired',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    if (tokenRes.status !== 200) {
+      throw new BusinessException(
+        'AUTHENTIK_ERROR',
+        `Failed to refresh token: ${JSON.stringify(tokenRes.data)}`,
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+
+    return {
+      ...tokenRes.data,
+      refresh_token: tokenRes.data.refresh_token ?? refreshToken,
+    };
+  }
+
   async userInfo(accessToken: string) : Promise<OidcProfile> {
     const client = this.client();
     const response = await client.get<OidcProfile>(

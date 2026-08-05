@@ -85,6 +85,7 @@ export class MissionExpirySweepService {
           },
         });
       });
+      await this.outboxRepository.notifyWake();
 
       await this.queryCacheInvalidator.invalidate('GetMissionAssignmentsQuery');
       await this.queryCacheInvalidator.invalidate('GetMyMissionAssignmentsQuery');

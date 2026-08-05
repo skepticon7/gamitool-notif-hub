@@ -74,7 +74,7 @@ export class BulkAssignMissionHandler implements ICommandHandler<BulkAssignMissi
         totalEmployees: employees.length,
       },
     });
-
+    await this.outboxRepository.notifyWake();
 
     return { missionId: command.missionId, totalEmployees: employees.length, assigned, skipped };
   }

@@ -4,6 +4,7 @@ import { RolesGuard } from '../shared/guards/roles.guard';
 import { QueryBus } from '@nestjs/cqrs';
 import { AppJwtPayload } from '../auth/types/auth.interfaces';
 import { GetMyBadgesQuery } from './queries/get-my-badges.query';
+import { GetAllBadgesQuery } from './queries/get-all-badges.query';
 
 @Controller('badges')
 @UseGuards(JwtAuthGuard , RolesGuard)
@@ -18,6 +19,12 @@ export class BadgesController {
     @Req() req : { user: AppJwtPayload }
   ) {
     return this.queryBus.execute(new GetMyBadgesQuery(req.user.userId));
+  }
+
+
+  @Get('catalog')
+  findAllBadges() {
+    return this.queryBus.execute(new GetAllBadgesQuery());
   }
 
 }

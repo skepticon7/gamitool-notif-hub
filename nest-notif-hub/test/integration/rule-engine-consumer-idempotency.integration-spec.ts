@@ -33,7 +33,12 @@ describe('RuleEngineConsumer (integration) — idempotency', () => {
     });
     await dataSource.initialize();
 
-    outboxRepository = new OutboxRepository(dataSource.getRepository(OutboxEntity), dataSource);
+    const fakeRedisClient = { publish: jest.fn().mockResolvedValue(1) };
+    outboxRepository = new OutboxRepository(
+      dataSource.getRepository(OutboxEntity),
+      dataSource,
+      fakeRedisClient as any,
+    );
     rulesCache = new RulesCache(dataSource.getRepository(EventLinkEntity));
 
     const link = await dataSource.getRepository(EventLinkEntity).save({

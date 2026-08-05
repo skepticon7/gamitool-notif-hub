@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/gamitool-design-system-22414a8c-a270-4504-a8d4-bb157ddab972/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/gamitool-design-system-22414a8c-a270-4504-a8d4-bb157ddab972/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/gamitool-design-system-22414a8c-a270-4504-a8d4-bb157ddab972/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/gamitool-design-system-22414a8c-a270-4504-a8d4-bb157ddab972/tokens/foundations.css">
+  <link rel="stylesheet" href="_ds/gamitool-design-system-22414a8c-a270-4504-a8d4-bb157ddab972/styles.css">
+  <script src="_ds/gamitool-design-system-22414a8c-a270-4504-a8d4-bb157ddab972/_ds_bundle.js"></script>
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0}
+    body{font-family:var(--font-sans,'Manrope',sans-serif);color:var(--foreground);background:#eef4fd;-webkit-font-smoothing:antialiased}
+    a{color:var(--primary);text-decoration:none}
+    a:hover{color:#4a68e8}
+    ::-webkit-scrollbar{width:10px;height:10px}
+    ::-webkit-scrollbar-thumb{background:#d4ddec;border-radius:8px;border:2px solid #eef4fd}
+    ::-webkit-scrollbar-thumb:hover{background:#c2cde0}
+    @keyframes eden-toast-in{from{opacity:0;transform:translateX(24px) scale(.96)}to{opacity:1;transform:none}}
+    @keyframes eden-pop{0%{opacity:0;transform:scale(.7)}60%{transform:scale(1.06)}100%{opacity:1;transform:scale(1)}}
+    @keyframes eden-dim{from{opacity:0}to{opacity:1}}
+    @keyframes eden-orbit{to{transform:rotate(360deg)}}
+    @keyframes eden-badge-reveal{0%{opacity:0;transform:scale(.4) rotate(-18deg)}55%{transform:scale(1.12) rotate(4deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+    @keyframes eden-shine{0%{transform:translateX(-120%) rotate(20deg)}100%{transform:translateX(320%) rotate(20deg)}}
+    @keyframes eden-pulse-ring{0%{transform:scale(.9);opacity:.7}70%{transform:scale(1.35);opacity:0}100%{opacity:0}}
+    @keyframes eden-float-up{0%{opacity:0;transform:translateY(8px)}20%{opacity:1}100%{opacity:0;transform:translateY(-46px)}}
+    @keyframes eden-dot{0%,100%{opacity:1}50%{opacity:.35}}
+    @keyframes eden-confetti{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(340px) rotate(520deg)}}
+    @keyframes eden-slidein{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  </style>
+</helmet>
+<div style="height:100vh;display:flex;flex-direction:column;overflow:hidden;background:#eef4fd">
+
+  <!-- ============ TOP BAR ============ -->
+  <header style="height:64px;flex-shrink:0;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:20px;z-index:40;position:relative">
+    <div style="display:flex;align-items:center">
+      <img src="assets/logos/gamitools-logo.svg" alt="GamiTool" style="height:26px;flex-shrink:0">
+    </div>
+
+    <!-- role switch -->
+    <div style="margin-left:8px;display:flex;background:var(--muted);border-radius:11px;padding:4px;gap:2px">
+      <button onClick="{{ setEmployee }}" style="{{ roleEmpStyle }}">Employee</button>
+      <button onClick="{{ setAdmin }}" style="{{ roleAdminStyle }}">Admin · HR</button>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <!-- context label -->
+    <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray);font-weight:600">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--green);animation:eden-dot 2s ease-in-out infinite"></span>
+      Live · WebSocket
+    </div>
+
+    <!-- notification bell (employee only) -->
+    <sc-if value="{{ isEmployee }}" hint-placeholder-val="{{ true }}">
+    <div style="position:relative">
+      <button onClick="{{ toggleBell }}" aria-label="Notifications" style="width:40px;height:40px;border-radius:11px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--foreground);position:relative">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        <sc-if value="{{ hasUnread }}" hint-placeholder-val="{{ true }}">
+          <span style="{{ bellBadgeStyle }}">{{ unreadCount }}</span>
+        </sc-if>
+      </button>
+
+      <!-- dropdown -->
+      <sc-if value="{{ bellOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;top:52px;right:0;width:380px;background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 16px 44px -12px rgba(0,53,128,.28);overflow:hidden;animation:eden-slidein .18s ease;z-index:50">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)">
+          <span style="font-weight:700;font-size:15px">Notifications</span>
+          <button onClick="{{ markAllRead }}" style="border:none;background:none;color:var(--primary);font-weight:600;font-size:13px;cursor:pointer;font-family:inherit">Mark all as read</button>
+        </div>
+        <div style="max-height:380px;overflow-y:auto">
+          <sc-for list="{{ notificationsVM }}" as="n" hint-placeholder-count="4">
+            <div style="{{ n.rowStyle }}">
+              <div style="{{ n.iconWrapStyle }}">{{ n.icon }}</div>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <sc-if value="{{ n.isReminder }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size:9.5px;font-weight:800;letter-spacing:.05em;color:#fff;background:var(--orange);padding:2px 6px;border-radius:5px">REMINDER</span>
+                  </sc-if>
+                  <span style="font-weight:700;font-size:13.5px;color:var(--foreground)">{{ n.title }}</span>
+                </div>
+                <div style="font-size:12.5px;color:var(--gray);margin-top:2px;line-height:1.35">{{ n.body }}</div>
+                <div style="font-size:11px;color:#aab3c6;margin-top:4px">{{ n.time }}</div>
+              </div>
+              <sc-if value="{{ n.unread }}" hint-placeholder-val="{{ true }}">
+                <span style="width:9px;height:9px;border-radius:50%;background:var(--primary);flex-shrink:0;margin-top:5px"></span>
+              </sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noNotifications }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:34px;text-align:center;color:var(--gray);font-size:13px">You're all caught up.</div>
+          </sc-if>
+        </div>
+      </div>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <!-- avatar -->
+    <button onClick="{{ openProfile }}" aria-label="Open profile" style="display:flex;align-items:center;gap:10px;padding:4px 4px 4px 12px;border:none;border-left:1px solid var(--border);background:none;cursor:pointer;font-family:inherit;border-radius:0 12px 12px 0">
+      <div style="text-align:right;line-height:1.15">
+        <div style="font-weight:700;font-size:13.5px;color:var(--foreground)">{{ headerName }}</div>
+        <div style="font-size:11.5px;color:var(--gray)">{{ headerRole }}</div>
+      </div>
+      <div style="width:40px;height:40px;border-radius:50%;background:var(--gradient-primary-to-secondary-2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">{{ headerInitials }}</div>
+    </button>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0">
+
+    <!-- ============ SIDEBAR ============ -->
+    <nav style="{{ navStyle }}">
+      <div style="{{ navGroupLabelStyle }}">{{ navGroupLabelText }}</div>
+      <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="5">
+        <button onClick="{{ item.onClick }}" title="{{ item.label }}" style="{{ item.style }}">
+          <span style="display:flex;width:20px;height:20px;flex-shrink:0">{{ item.icon }}</span>
+          <sc-if value="{{ showNavLabels }}" hint-placeholder-val="{{ true }}">
+            <span style="flex:1;text-align:left;white-space:nowrap">{{ item.label }}</span>
+          </sc-if>
+          <sc-if value="{{ item.showBadge }}" hint-placeholder-val="{{ false }}">
+            <span style="{{ item.badgeStyle }}">{{ item.badge }}</span>
+          </sc-if>
+        </button>
+      </sc-for>
+
+      <div style="flex:1"></div>
+
+      <sc-if value="{{ showNavLabels }}" hint-placeholder-val="{{ true }}">
+        <div style="margin:8px 6px 0;padding:14px;border-radius:14px;background:linear-gradient(160deg,#f2f6ff,#eaf1ff);border:1px solid #dfe8ff">
+          <div style="font-size:12px;font-weight:700;color:var(--foreground);margin-bottom:4px">{{ sideFootTitle }}</div>
+          <div style="font-size:11.5px;color:var(--gray);line-height:1.4">{{ sideFootBody }}</div>
+        </div>
+      </sc-if>
+
+      <button onClick="{{ doSignOut }}" title="Sign out" style="{{ signOutStyle }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+        <sc-if value="{{ showNavLabels }}" hint-placeholder-val="{{ true }}">
+          <span style="white-space:nowrap">Sign out</span>
+        </sc-if>
+      </button>
+    </nav>
+    <!-- resize divider -->
+    <div onMouseDown="{{ startResize }}" onDoubleClick="{{ toggleNav }}" title="Drag to resize · double-click to toggle" style="width:6px;flex-shrink:0;cursor:col-resize;background:transparent;position:relative;z-index:20" style-hover="background:rgba(90,123,255,.12)">
+      <span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:4px;height:34px;border-radius:99px;background:var(--border)"></span>
+    </div>
+
+    <!-- ============ MAIN ============ -->
+    <main style="flex:1;overflow-y:auto;position:relative">
+      <div style="max-width:1140px;margin:0 auto;padding:32px 40px 64px">
+
+      <!-- ====== EMPLOYEE: DASHBOARD ====== -->
+      <sc-if value="{{ showEDashboard }}" hint-placeholder-val="{{ true }}">
+        <div style="animation:eden-slidein .3s ease">
+          <div style="margin-bottom:22px">
+            <h1 style="font-size:27px;font-weight:800;margin:0 0 4px">Welcome back, {{ emp.first }}</h1>
+            <p style="margin:0;color:var(--gray);font-size:15px">Here's where your quests stand today.</p>
+          </div>
+
+          <!-- XP HERO -->
+          <div style="border-radius:20px;background:var(--gradient-primary-to-secondary-2);padding:26px 28px;color:#fff;box-shadow:0 16px 40px -14px rgba(90,123,255,.6);position:relative;overflow:hidden;margin-bottom:20px">
+            <div style="position:absolute;inset:0;background:radial-gradient(120% 140% at 90% -20%,rgba(255,255,255,.28),transparent 55%);pointer-events:none"></div>
+            <div style="display:flex;align-items:center;gap:22px;position:relative;flex-wrap:wrap">
+              <div style="position:relative;width:96px;height:96px;flex-shrink:0">
+                <span style="position:absolute;inset:-6px;border-radius:50%;border:2px dashed rgba(255,255,255,.55);animation:eden-orbit 14s linear infinite"></span>
+                <div style="width:96px;height:96px;border-radius:50%;background:rgba(255,255,255,.16);border:2px solid rgba(255,255,255,.65);display:flex;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
+                  <span style="font-size:10px;font-weight:700;letter-spacing:.12em;opacity:.85">LEVEL</span>
+                  <span style="font-size:38px;font-weight:800;line-height:1">{{ emp.level }}</span>
+                </div>
+              </div>
+              <div style="flex:1;min-width:260px">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+                  <span style="font-weight:700;font-size:16px">{{ emp.rankTitle }}</span>
+                  <span style="font-size:13.5px;opacity:.92">{{ emp.xpText }}</span>
+                </div>
+                <div style="height:14px;border-radius:9px;background:rgba(255,255,255,.28);overflow:hidden;position:relative">
+                  <div style="height:100%;border-radius:9px;background:linear-gradient(90deg,#fff,#e8ecff);width:{{ emp.xpPct }}%;transition:width 1s cubic-bezier(.2,.8,.2,1);box-shadow:0 0 14px rgba(255,255,255,.7)"></div>
+                </div>
+                <div style="display:flex;gap:26px;margin-top:16px">
+                  <div><div style="font-size:22px;font-weight:800;line-height:1">{{ emp.totalXpText }}</div><div style="font-size:11.5px;opacity:.85;margin-top:2px">Total XP</div></div>
+                  <div><div style="font-size:22px;font-weight:800;line-height:1">{{ emp.completedCount }}</div><div style="font-size:11.5px;opacity:.85;margin-top:2px">Missions done</div></div>
+                  <div><div style="font-size:22px;font-weight:800;line-height:1">{{ emp.badgeCount }}</div><div style="font-size:11.5px;opacity:.85;margin-top:2px">Badges earned</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:20px;align-items:start">
+            <!-- active missions summary -->
+            <div style="background:#fff;border:1px solid var(--card-border);border-radius:18px;box-shadow:var(--shadow-card);overflow:hidden">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border)">
+                <h2 style="margin:0;font-size:16px;font-weight:700">Active missions</h2>
+                <button onClick="{{ goMissions }}" style="border:none;background:none;color:var(--primary);font-weight:600;font-size:13px;cursor:pointer;font-family:inherit">View all →</button>
+              </div>
+              <div>
+                <sc-for list="{{ activeMissionsVM }}" as="m" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:14px;padding:15px 22px;border-bottom:1px solid #f1f4fa">
+                    <div style="{{ m.dotStyle }}"></div>
+                    <div style="flex:1;min-width:0">
+                      <div style="font-weight:650;font-size:14px">{{ m.name }}</div>
+                      <div style="font-size:12.5px;color:var(--gray);margin-top:2px">{{ m.metaText }}</div>
+                    </div>
+                    <span style="{{ m.deadlineChipStyle }}">{{ m.deadlineText }}</span>
+                    <button onClick="{{ m.onComplete }}" style="{{ m.completeBtnStyle }}">Complete</button>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ noActive }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:30px;text-align:center;color:var(--gray);font-size:13.5px">No active missions. Nice work.</div>
+                </sc-if>
+              </div>
+            </div>
+
+            <!-- activity feed -->
+            <div style="background:#fff;border:1px solid var(--card-border);border-radius:18px;box-shadow:var(--shadow-card);overflow:hidden">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border)">
+                <h2 style="margin:0;font-size:16px;font-weight:700">Recent activity</h2>
+                <span style="font-size:11px;color:var(--gray);display:flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:50%;background:var(--green);animation:eden-dot 2s infinite"></span>Live</span>
+              </div>
+              <div style="padding:8px 0">
+                <sc-for list="{{ activityVM }}" as="a" hint-placeholder-count="5">
+                  <div style="display:flex;gap:12px;padding:10px 22px;animation:eden-slidein .3s ease">
+                    <div style="display:flex;flex-direction:column;align-items:center">
+                      <div style="{{ a.iconStyle }}">{{ a.icon }}</div>
+                      <div style="flex:1;width:2px;background:#eef2f8;margin-top:2px"></div>
+                    </div>
+                    <div style="padding-bottom:6px">
+                      <div style="font-size:13px;line-height:1.4;color:var(--foreground)">{{ a.text }}</div>
+                      <div style="font-size:11px;color:#aab3c6;margin-top:2px">{{ a.time }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ====== EMPLOYEE: MISSIONS ====== -->
+      <sc-if value="{{ showEMissions }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:eden-slidein .3s ease">
+          <div style="margin-bottom:20px">
+            <h1 style="font-size:27px;font-weight:800;margin:0 0 4px">Your missions</h1>
+            <p style="margin:0;color:var(--gray);font-size:15px">Complete missions to earn XP and unlock badges.</p>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-bottom:18px">
+            <button onClick="{{ filterAll }}" style="{{ filStyleAll }}">All</button>
+            <button onClick="{{ filterAssigned }}" style="{{ filStyleAssigned }}">Assigned</button>
+            <button onClick="{{ filterCompleted }}" style="{{ filStyleCompleted }}">Completed</button>
+            <button onClick="{{ filterExpired }}" style="{{ filStyleExpired }}">Expired</button>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ missionsVM }}" as="m" hint-placeholder-count="4">
+              <div style="{{ m.cardStyle }}">
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px;flex-wrap:wrap">
+                    <span style="font-weight:700;font-size:16px;color:var(--foreground)">{{ m.name }}</span>
+                    <span style="{{ m.statusChipStyle }}">{{ m.statusLabel }}</span>
+                    <sc-if value="{{ m.showDeadline }}" hint-placeholder-val="{{ true }}">
+                      <span style="{{ m.deadlineChipStyle }}">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right:4px;vertical-align:-1px"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{{ m.deadlineText }}</span>
+                    </sc-if>
+                    <sc-if value="{{ m.noDeadline }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size:12px;color:#aab3c6;font-weight:600">No deadline</span>
+                    </sc-if>
+                  </div>
+                  <div style="font-size:13.5px;color:var(--gray);line-height:1.45;max-width:560px">{{ m.description }}</div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-top:10px">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-3 7h5l-3 7"/></svg>
+                    <span style="font-weight:800;font-size:13.5px;color:var(--primary)">+{{ m.xp }} XP</span>
+                  </div>
+                </div>
+                <div style="flex-shrink:0">
+                  <sc-if value="{{ m.canComplete }}" hint-placeholder-val="{{ true }}">
+                    <button onClick="{{ m.onComplete }}" style="height:40px;padding:0 20px;border-radius:12px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;box-shadow:0 6px 16px -6px rgba(90,123,255,.8);display:flex;align-items:center;gap:8px">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Complete</button>
+                  </sc-if>
+                  <sc-if value="{{ m.isDone }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;align-items:center;gap:7px;color:var(--success);font-weight:700;font-size:14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Done</div>
+                  </sc-if>
+                  <sc-if value="{{ m.isExpired }}" hint-placeholder-val="{{ false }}">
+                    <div style="color:var(--gray);font-weight:600;font-size:13.5px">Expired</div>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ====== EMPLOYEE: BADGES ====== -->
+      <sc-if value="{{ showEBadges }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:eden-slidein .3s ease">
+          <div style="margin-bottom:6px">
+            <h1 style="font-size:27px;font-weight:800;margin:0 0 4px">Badge case</h1>
+            <p style="margin:0;color:var(--gray);font-size:15px">Earn badges by completing missions. {{ badgeProgressText }}</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;margin:18px 0 24px;padding:14px 18px;background:#fff;border:1px solid var(--card-border);border-radius:14px">
+            <div style="flex:1">
+              <div style="height:10px;border-radius:6px;background:var(--muted);overflow:hidden">
+                <div style="height:100%;background:var(--gradient-primary-to-secondary);width:{{ nextBadgePct }}%;transition:width .8s ease;border-radius:6px"></div>
+              </div>
+            </div>
+            <div style="font-size:13px;color:var(--gray);font-weight:600;white-space:nowrap">{{ nextBadgeText }}</div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px">
+            <sc-for list="{{ badgesVM }}" as="b" hint-placeholder-count="6">
+              <div style="{{ b.cardStyle }}">
+                <div style="position:relative;width:88px;height:88px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center">
+                  <sc-if value="{{ b.unlocked }}" hint-placeholder-val="{{ true }}">
+                    <span style="{{ b.glowStyle }}"></span>
+                  </sc-if>
+                  <sc-if value="{{ b.iconSrc }}" hint-placeholder-val="{{ false }}"><img src="{{ b.iconSrc }}" alt="" style="{{ b.iconStyle }}" width="72" height="72"></sc-if>
+                  <sc-if value="{{ b.locked }}" hint-placeholder-val="{{ false }}">
+                    <span style="position:absolute;right:2px;bottom:2px;width:26px;height:26px;border-radius:50%;background:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--gray)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+                  </sc-if>
+                </div>
+                <div style="text-align:center">
+                  <div style="font-weight:700;font-size:15px;color:{{ b.titleColor }}">{{ b.name }}</div>
+                  <div style="{{ b.tierChipStyle }}">{{ b.tierLabel }}</div>
+                  <div style="font-size:12px;color:var(--gray);margin-top:8px">{{ b.reqText }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ====== ADMIN: RULE GRAPH ====== -->
+      <sc-if value="{{ showRules }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:eden-slidein .3s ease">
+          <div style="margin-bottom:8px">
+            <h1 style="font-size:27px;font-weight:800;margin:0 0 4px">Rule graph</h1>
+            <p style="margin:0;color:var(--gray);font-size:15px">Wire what happens when an event fires. Events and actions are pre-approved — only valid combinations can be connected.</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin:16px 0 18px;padding:12px 16px;background:#f2f6ff;border:1px solid #dfe8ff;border-radius:12px;font-size:13px;color:var(--foreground)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <span><b>Drag to wire.</b> Drag from an event's right port to an action. Only valid targets light up — invalid ports won't connect. Drag nodes to rearrange.</span>
+          </div>
+
+          <div ref="{{ setCanvasRef }}" style="position:relative;height:600px;background:#fbfcfe;background-image:radial-gradient(#e2e8f4 1.1px,transparent 1.1px);background-size:22px 22px;border:1px solid var(--card-border);border-radius:18px;box-shadow:var(--shadow-card);overflow:hidden;user-select:none">
+            <!-- wires layer -->
+            <svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1" fill="none">
+              <sc-for list="{{ graphWires }}" as="w" hint-placeholder-count="6">
+                <path d="{{ w.d }}" stroke="{{ w.color }}" stroke-width="{{ w.width }}" stroke-linecap="round" fill="none" opacity="{{ w.opacity }}"></path>
+              </sc-for>
+              <sc-if value="{{ graphLinking }}" hint-placeholder-val="{{ false }}">
+                <path d="{{ linkPath }}" stroke="var(--primary)" stroke-width="3" stroke-dasharray="6 6" stroke-linecap="round" fill="none"></path>
+              </sc-if>
+            </svg>
+            <!-- wire delete buttons -->
+            <sc-for list="{{ graphWires }}" as="w" hint-placeholder-count="0">
+              <button onClick="{{ w.onRemove }}" title="Remove wiring" style="{{ w.badgeStyle }}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </sc-for>
+            <!-- event nodes -->
+            <sc-for list="{{ graphEvents }}" as="n" hint-placeholder-count="6">
+              <div style="{{ n.style }}" onMouseDown="{{ n.onDown }}">
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:9.5px;font-weight:800;letter-spacing:.06em;color:#8b96ac">EVENT</div>
+                  <div style="font-size:13.5px;font-weight:700;color:var(--foreground);white-space:nowrap">{{ n.label }}</div>
+                </div>
+                <div onMouseDown="{{ n.onPortDown }}" title="Drag to an action" style="{{ n.portStyle }}"></div>
+              </div>
+            </sc-for>
+            <!-- action nodes -->
+            <sc-for list="{{ graphActions }}" as="n" hint-placeholder-count="7">
+              <div style="{{ n.style }}" onMouseDown="{{ n.onDown }}" onMouseEnter="{{ n.onEnter }}" onMouseLeave="{{ n.onLeave }}">
+                <div onMouseUp="{{ n.onEnter }}" style="{{ n.portStyle }}"></div>
+                <span style="{{ n.iconWrap }}">{{ n.icon }}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:9.5px;font-weight:800;letter-spacing:.06em;color:#8b96ac">ACTION</div>
+                  <div style="font-size:13px;font-weight:700;color:{{ n.titleColor }};white-space:nowrap">{{ n.label }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <!-- wirings list under the canvas -->
+          <div style="background:#fff;border:1px solid var(--card-border);border-radius:18px;box-shadow:var(--shadow-card);overflow:hidden;margin-top:20px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border)">
+              <h2 style="margin:0;font-size:16px;font-weight:700">Active wirings</h2>
+              <span style="font-size:12.5px;color:var(--gray)">Reacts automatically in real time</span>
+            </div>
+            <div style="padding:18px 22px;display:flex;flex-direction:column;gap:12px">
+              <sc-for list="{{ wiringsVM }}" as="w" hint-placeholder-count="5">
+                <div style="{{ w.cardStyle }}">
+                  <span style="{{ w.eventPill }}">{{ w.eventLabel }}</span>
+                  <svg width="26" height="16" viewBox="0 0 26 16" fill="none" stroke="#c2cde0" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><path d="M2 8h20"/><path d="m17 3 5 5-5 5"/></svg>
+                  <span style="{{ w.actionPill }}">{{ w.actionLabel }}</span>
+                  <div style="flex:1;min-width:0">
+                    <sc-if value="{{ w.hasCfg }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size:12.5px;color:var(--gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">{{ w.cfg }}</span>
+                    </sc-if>
+                  </div>
+                  <sc-if value="{{ w.configBtnShow }}" hint-placeholder-val="{{ false }}">
+                    <button onClick="{{ w.onConfig }}" style="height:32px;padding:0 13px;border-radius:9px;border:1px solid var(--border);background:#fff;color:var(--foreground);font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;flex-shrink:0">Configure</button>
+                  </sc-if>
+                  <button onClick="{{ w.onRemove }}" aria-label="Remove" style="width:32px;height:32px;border-radius:9px;border:1px solid var(--border);background:#fff;color:var(--gray);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                  </button>
+                </div>
+              </sc-for>
+              <sc-if value="{{ noWirings }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:30px;text-align:center;color:var(--gray);font-size:13.5px">No wirings yet. Drag from an event to an action above.</div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ====== ADMIN: SCHEDULMENTS ====== -->
+      <sc-if value="{{ showSchedul }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:eden-slidein .3s ease">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:22px">
+            <div>
+              <h1 style="font-size:27px;font-weight:800;margin:0 0 4px">Schedulments</h1>
+              <p style="margin:0;color:var(--gray);font-size:15px">Auto-reassign missions on a fixed recurrence to a chosen audience.</p>
+            </div>
+            <button onClick="{{ openNewSchedul }}" style="height:44px;padding:0 20px;border-radius:12px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;white-space:nowrap;box-shadow:0 6px 16px -6px rgba(90,123,255,.8);display:flex;align-items:center;gap:8px">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New schedulment</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ schedulmentsVM }}" as="x" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:18px;padding:18px 22px;background:#fff;border:1px solid var(--card-border);border-radius:16px;box-shadow:var(--shadow-card)">
+                <div style="width:46px;height:46px;border-radius:12px;background:#f2f6ff;color:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+                </div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-weight:700;font-size:15.5px">{{ x.mission }}</div>
+                  <div style="font-size:13px;color:var(--gray);margin-top:3px">Next run: {{ x.next }}</div>
+                </div>
+                <div style="text-align:right">
+                  <div style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#2563eb;background:var(--light-blue);padding:4px 12px;border-radius:99px">{{ x.recLabel }}</div>
+                  <div style="font-size:11.5px;color:var(--gray);margin-top:4px">{{ x.anchor }}</div>
+                </div>
+                <div style="width:1px;height:36px;background:var(--border)"></div>
+                <div style="text-align:right;min-width:120px">
+                  <div style="font-size:13.5px;font-weight:600">{{ x.audienceText }}</div>
+                  <div style="font-size:11.5px;color:var(--gray);margin-top:3px">Audience</div>
+                </div>
+                <button onClick="{{ x.onRemove }}" aria-label="Remove" style="width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:#fff;color:var(--gray);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+                </button>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ====== ADMIN: CATALOG ====== -->
+      <sc-if value="{{ showCatalog }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:eden-slidein .3s ease">
+          <div style="margin-bottom:18px">
+            <h1 style="font-size:27px;font-weight:800;margin:0 0 4px">Missions &amp; Badges</h1>
+            <p style="margin:0;color:var(--gray);font-size:15px">Manage the catalog. Missions with no duration never get a deadline, reminders, or expiry.</p>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div style="display:flex;gap:8px">
+              <button onClick="{{ setTabMissions }}" style="{{ tabMissionsStyle }}">Missions</button>
+              <button onClick="{{ setTabBadges }}" style="{{ tabBadgesStyle }}">Badges</button>
+            </div>
+            <sc-if value="{{ catIsMissions }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ newMission }}" style="height:40px;padding:0 18px;border-radius:11px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New mission</button>
+            </sc-if>
+            <sc-if value="{{ catIsBadges }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ newBadge }}" style="height:40px;padding:0 18px;border-radius:11px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New badge</button>
+            </sc-if>
+          </div>
+
+          <sc-if value="{{ catIsMissions }}" hint-placeholder-val="{{ true }}">
+            <div style="background:#fff;border:1px solid var(--card-border);border-radius:16px;box-shadow:var(--shadow-card);overflow:hidden">
+              <div style="display:grid;grid-template-columns:2.4fr 1fr .8fr .9fr auto;gap:16px;padding:13px 22px;background:#f8fafd;border-bottom:1px solid var(--border);font-size:11.5px;font-weight:800;letter-spacing:.04em;color:var(--gray)">
+                <div>MISSION</div><div>DURATION</div><div>XP</div><div>STATUS</div><div></div>
+              </div>
+              <sc-for list="{{ catMissions }}" as="m" hint-placeholder-count="5">
+                <div style="display:grid;grid-template-columns:2.4fr 1fr .8fr .9fr auto;gap:16px;padding:15px 22px;border-bottom:1px solid #f1f4fa;align-items:center">
+                  <div style="min-width:0"><div style="font-weight:700;font-size:14px">{{ m.name }}</div><div style="font-size:12px;color:var(--gray);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.description }}</div></div>
+                  <div style="font-size:13.5px;font-weight:600;color:var(--foreground)">{{ m.durationText }}</div>
+                  <div style="font-weight:800;font-size:13.5px;color:var(--primary)">+{{ m.xp }}</div>
+                  <div style="font-size:13px;color:var(--gray);text-transform:capitalize">{{ m.statusLabel }}</div>
+                  <div style="display:flex;gap:6px">
+                    <button onClick="{{ m.onEdit }}" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--foreground);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+                    <button onClick="{{ m.onDelete }}" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--gray);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ catIsBadges }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#fff;border:1px solid var(--card-border);border-radius:16px;box-shadow:var(--shadow-card);overflow:hidden">
+              <div style="display:grid;grid-template-columns:auto 2fr 1fr 1.4fr auto;gap:16px;padding:13px 22px;background:#f8fafd;border-bottom:1px solid var(--border);font-size:11.5px;font-weight:800;letter-spacing:.04em;color:var(--gray)">
+                <div style="width:40px"></div><div>BADGE</div><div>TIER</div><div>UNLOCK AT</div><div></div>
+              </div>
+              <sc-for list="{{ catBadges }}" as="b" hint-placeholder-count="5">
+                <div style="display:grid;grid-template-columns:auto 2fr 1fr 1.4fr auto;gap:16px;padding:13px 22px;border-bottom:1px solid #f1f4fa;align-items:center">
+                  <sc-if value="{{ b.iconSrc }}" hint-placeholder-val="{{ false }}"><img src="{{ b.iconSrc }}" alt="" width="40" height="40" style="filter:drop-shadow(0 3px 5px rgba(0,0,0,.12))"></sc-if>
+                  <div style="font-weight:700;font-size:14px">{{ b.name }}</div>
+                  <div style="{{ b.tierStyle }};font-size:13.5px">{{ b.tierLabel }}</div>
+                  <div style="font-size:13.5px;color:var(--foreground)">{{ b.threshold }} missions completed</div>
+                  <div style="display:flex;gap:6px">
+                    <button onClick="{{ b.onEdit }}" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--foreground);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+                    <button onClick="{{ b.onDelete }}" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--gray);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- ====== ADMIN: DASHBOARD (delivery stats + recent engine activity) ====== -->
+      <sc-if value="{{ showAdminDash }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:eden-slidein .3s ease">
+          <div style="margin-bottom:22px">
+            <h1 style="font-size:27px;font-weight:800;margin:0 0 4px">Dashboard</h1>
+            <p style="margin:0;color:var(--gray);font-size:15px">Notification delivery and the latest engine activity, at a glance.</p>
+          </div>
+
+          <div style="font-size:13px;font-weight:800;letter-spacing:.05em;color:var(--gray);margin-bottom:12px">NOTIFICATION DELIVERY</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px">
+            <sc-for list="{{ statsVM }}" as="c" hint-placeholder-count="3">
+              <div style="background:#fff;border:1px solid var(--card-border);border-radius:18px;box-shadow:var(--shadow-card);padding:22px">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                  <span style="{{ c.iconWrap }}">{{ c.icon }}</span>
+                  <div><div style="font-weight:700;font-size:16px">{{ c.ch }}</div><div style="font-size:12px;color:var(--gray)">{{ c.rate }} delivered</div></div>
+                </div>
+                <div style="display:flex;gap:22px">
+                  <div><div style="font-size:26px;font-weight:800;color:var(--success);line-height:1">{{ c.delivered }}</div><div style="font-size:12px;color:var(--gray);margin-top:3px">Delivered</div></div>
+                  <div><div style="font-size:26px;font-weight:800;color:var(--destructive);line-height:1">{{ c.failed }}</div><div style="font-size:12px;color:var(--gray);margin-top:3px">Failed</div></div>
+                </div>
+                <div style="{{ c.barWrap }}"><div style="{{ c.barDelivered }}"></div></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:var(--gradient-primary-to-secondary-2);border-radius:18px;padding:24px 28px;color:#fff;display:flex;align-items:center;gap:40px;box-shadow:0 14px 36px -14px rgba(90,123,255,.6);margin-bottom:28px">
+            <div><div style="font-size:32px;font-weight:800;line-height:1">{{ totalDelivered }}</div><div style="font-size:13px;opacity:.9;margin-top:4px">Total delivered</div></div>
+            <div><div style="font-size:32px;font-weight:800;line-height:1">{{ totalFailed }}</div><div style="font-size:13px;opacity:.9;margin-top:4px">Total failed</div></div>
+            <div><div style="font-size:32px;font-weight:800;line-height:1">{{ overallRate }}</div><div style="font-size:13px;opacity:.9;margin-top:4px">Overall delivery rate</div></div>
+          </div>
+
+          <div style="background:#fff;border:1px solid var(--card-border);border-radius:18px;box-shadow:var(--shadow-card);overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border)">
+              <div style="display:flex;align-items:center;gap:10px">
+                <h2 style="margin:0;font-size:16px;font-weight:700">Recent engine activity</h2>
+                <span style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--gray);font-weight:600"><span style="width:7px;height:7px;border-radius:50%;background:var(--green);animation:eden-dot 2s infinite"></span>Live</span>
+              </div>
+              <button onClick="{{ goEngine }}" style="border:none;background:none;color:var(--primary);font-weight:600;font-size:13px;cursor:pointer;font-family:inherit">View all →</button>
+            </div>
+            <sc-for list="{{ engineRecent }}" as="g" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid #f1f4fa;animation:eden-slidein .3s ease">
+                <span style="{{ g.iconWrap }}">{{ g.icon }}</span>
+                <div style="width:32px;height:32px;border-radius:50%;background:var(--muted);color:var(--foreground);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">{{ g.initials }}</div>
+                <div style="flex:1;min-width:0;font-size:14px;line-height:1.4"><b>{{ g.who }}</b> {{ g.text }}</div>
+                <span style="{{ g.typeStyle }}">{{ g.type }}</span>
+                <span style="font-size:12px;color:#aab3c6;white-space:nowrap;min-width:64px;text-align:right">{{ g.time }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- (legacy standalone delivery stats screen, no longer in nav) -->
+      <sc-if value="{{ showStats }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:eden-slidein .3s ease">
+          <div style="margin-bottom:22px">
+            <h1 style="font-size:27px;font-weight:800;margin:0 0 4px">Delivery stats</h1>
+            <p style="margin:0;color:var(--gray);font-size:15px">Delivered vs failed, read off real delivery outcomes per channel.</p>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px">
+            <sc-for list="{{ statsVM }}" as="c" hint-placeholder-count="3">
+              <div style="background:#fff;border:1px solid var(--card-border);border-radius:18px;box-shadow:var(--shadow-card);padding:22px">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                  <span style="{{ c.iconWrap }}">{{ c.icon }}</span>
+                  <div><div style="font-weight:700;font-size:16px">{{ c.ch }}</div><div style="font-size:12px;color:var(--gray)">{{ c.rate }} delivered</div></div>
+                </div>
+                <div style="display:flex;gap:22px">
+                  <div><div style="font-size:26px;font-weight:800;color:var(--success);line-height:1">{{ c.delivered }}</div><div style="font-size:12px;color:var(--gray);margin-top:3px">Delivered</div></div>
+                  <div><div style="font-size:26px;font-weight:800;color:var(--destructive);line-height:1">{{ c.failed }}</div><div style="font-size:12px;color:var(--gray);margin-top:3px">Failed</div></div>
+                </div>
+                <div style="{{ c.barWrap }}"><div style="{{ c.barDelivered }}"></div></div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:var(--gradient-primary-to-secondary-2);border-radius:18px;padding:24px 28px;color:#fff;display:flex;align-items:center;gap:40px;box-shadow:0 14px 36px -14px rgba(90,123,255,.6)">
+            <div><div style="font-size:32px;font-weight:800;line-height:1">{{ totalDelivered }}</div><div style="font-size:13px;opacity:.9;margin-top:4px">Total delivered</div></div>
+            <div><div style="font-size:32px;font-weight:800;line-height:1">{{ totalFailed }}</div><div style="font-size:13px;opacity:.9;margin-top:4px">Total failed</div></div>
+            <div><div style="font-size:32px;font-weight:800;line-height:1">{{ overallRate }}</div><div style="font-size:13px;opacity:.9;margin-top:4px">Overall delivery rate</div></div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ====== ADMIN: ENGINE ACTIVITY ====== -->
+      <sc-if value="{{ showEngine }}" hint-placeholder-val="{{ false }}">
+        <div style="animation:eden-slidein .3s ease">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
+            <div>
+              <h1 style="font-size:27px;font-weight:800;margin:0 0 4px">Engine activity</h1>
+              <p style="margin:0;color:var(--gray);font-size:15px">Every event the system processes, org-wide, in real time.</p>
+            </div>
+            <span style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--gray);font-weight:600;background:#fff;border:1px solid var(--border);padding:8px 14px;border-radius:99px"><span style="width:8px;height:8px;border-radius:50%;background:var(--green);animation:eden-dot 2s infinite"></span>Live audit stream</span>
+          </div>
+          <div style="background:#fff;border:1px solid var(--card-border);border-radius:18px;box-shadow:var(--shadow-card);overflow:hidden">
+            <sc-for list="{{ engineVM }}" as="g" hint-placeholder-count="8">
+              <div style="display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid #f1f4fa;animation:eden-slidein .3s ease">
+                <span style="{{ g.iconWrap }}">{{ g.icon }}</span>
+                <div style="width:32px;height:32px;border-radius:50%;background:var(--muted);color:var(--foreground);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">{{ g.initials }}</div>
+                <div style="flex:1;min-width:0;font-size:14px;line-height:1.4"><b>{{ g.who }}</b> {{ g.text }}</div>
+                <span style="{{ g.typeStyle }}">{{ g.type }}</span>
+                <span style="font-size:12px;color:#aab3c6;white-space:nowrap;min-width:64px;text-align:right">{{ g.time }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ============ LIVE TOASTS ============ -->
+  <div style="position:fixed;bottom:22px;right:22px;display:flex;flex-direction:column-reverse;gap:10px;z-index:60;pointer-events:none">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div style="{{ t.style }}">
+        <div style="{{ t.iconWrap }}">{{ t.icon }}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:13.5px;color:var(--foreground)">{{ t.title }}</div>
+          <div style="font-size:12.5px;color:var(--gray);margin-top:1px;line-height:1.35">{{ t.body }}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- ============ LEVEL-UP OVERLAY ============ -->
+  <sc-if value="{{ showLevelUp }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;background:rgba(3,20,60,.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:90;animation:eden-dim .25s ease">
+      <div style="position:relative;width:380px;border-radius:26px;background:var(--gradient-primary-to-secondary-2);padding:38px 34px 30px;text-align:center;color:#fff;box-shadow:0 30px 80px -20px rgba(90,123,255,.8);animation:eden-pop .5s cubic-bezier(.2,.9,.3,1.4);overflow:hidden">
+        <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none">{{ confetti }}</div>
+        <div style="position:relative;width:132px;height:132px;margin:0 auto 18px">
+          <span style="position:absolute;inset:0;border-radius:50%;border:3px solid rgba(255,255,255,.5);animation:eden-pulse-ring 1.8s ease-out infinite"></span>
+          <span style="position:absolute;inset:-10px;border-radius:50%;border:2px dashed rgba(255,255,255,.55);animation:eden-orbit 10s linear infinite"></span>
+          <div style="position:absolute;inset:16px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.7);display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.14em;opacity:.9">LEVEL</span>
+            <span style="font-size:52px;font-weight:800;line-height:1">{{ levelUpLevel }}</span>
+          </div>
+        </div>
+        <div style="font-size:13px;font-weight:800;letter-spacing:.18em;opacity:.9">LEVEL UP!</div>
+        <div style="font-size:22px;font-weight:800;margin-top:6px">{{ levelUpTitle }}</div>
+        <div style="font-size:13.5px;opacity:.9;margin-top:6px;line-height:1.45">{{ levelUpBody }}</div>
+        <button onClick="{{ dismissOverlay }}" style="margin-top:22px;width:100%;height:46px;border-radius:13px;border:none;background:#fff;color:var(--primary);font-weight:800;font-size:15px;cursor:pointer;font-family:inherit">Continue</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ BADGE-UNLOCK OVERLAY ============ -->
+  <sc-if value="{{ showBadgeUnlock }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;background:rgba(3,20,60,.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:90;animation:eden-dim .25s ease">
+      <div style="position:relative;width:360px;border-radius:26px;background:#fff;padding:36px 32px 28px;text-align:center;box-shadow:0 30px 80px -20px rgba(3,20,60,.5);animation:eden-pop .45s cubic-bezier(.2,.9,.3,1.4);overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:120px;background:{{ badgeHeroBg }};pointer-events:none"></div>
+        <div style="position:relative;width:130px;height:130px;margin:0 auto 16px">
+          <span style="position:absolute;inset:-6px;border-radius:50%;background:{{ badgeGlow }};filter:blur(14px);animation:eden-pulse-ring 2s ease-out infinite"></span>
+                    <sc-if value="{{ badgeIconSrc }}" hint-placeholder-val="{{ false }}"><img src="{{ badgeIconSrc }}" alt="" width="130" height="130" style="position:relative;animation:eden-badge-reveal .7s cubic-bezier(.2,.9,.3,1.4);filter:drop-shadow(0 10px 18px rgba(0,0,0,.18))"></sc-if>
+        </div>
+        <div style="font-size:13px;font-weight:800;letter-spacing:.16em;color:{{ badgeTierColor }}">BADGE UNLOCKED!</div>
+        <div style="font-size:23px;font-weight:800;margin-top:6px;color:var(--foreground)">{{ badgeUnlockName }}</div>
+        <div style="{{ badgeTierChip }}">{{ badgeTierLabel }} Tier</div>
+        <div style="font-size:13.5px;color:var(--gray);margin-top:12px;line-height:1.45">{{ badgeUnlockBody }}</div>
+        <button onClick="{{ dismissOverlay }}" style="margin-top:22px;width:100%;height:46px;border-radius:13px;border:none;background:var(--primary);color:#fff;font-weight:800;font-size:15px;cursor:pointer;font-family:inherit">Add to case</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ REMINDER POPUP (urgent, distinct) ============ -->
+  <sc-if value="{{ showReminder }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;background:rgba(60,20,10,.42);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:88;animation:eden-dim .25s ease">
+      <div style="position:relative;width:400px;border-radius:22px;background:#fff;overflow:hidden;box-shadow:0 30px 80px -20px rgba(120,40,10,.5);animation:eden-pop .4s cubic-bezier(.2,.9,.3,1.4);border:1px solid #ffd9c2">
+        <div style="height:6px;background:linear-gradient(90deg,var(--orange),var(--red))"></div>
+        <div style="padding:26px 26px 22px">
+          <div style="display:flex;align-items:center;gap:13px;margin-bottom:16px">
+            <div style="position:relative;width:52px;height:52px;flex-shrink:0">
+              <span style="position:absolute;inset:0;border-radius:14px;background:var(--orange);opacity:.28;animation:eden-pulse-ring 1.6s ease-out infinite"></span>
+              <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(150deg,var(--orange),var(--red));display:flex;align-items:center;justify-content:center;color:#fff;position:relative">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--red)">DEADLINE REMINDER</div>
+              <div style="font-size:18px;font-weight:800;color:var(--foreground);margin-top:2px">{{ reminderMission }}</div>
+            </div>
+          </div>
+          <div style="background:#fff6f2;border:1px solid #ffe0d3;border-radius:14px;padding:14px 16px;margin-bottom:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:13px;color:var(--gray);font-weight:600">Time remaining</span>
+              <span style="font-size:20px;font-weight:800;color:var(--red)">{{ reminderCountdown }}</span>
+            </div>
+            <div style="font-size:12px;color:var(--orange);margin-top:8px;display:flex;align-items:center;gap:6px;font-weight:600">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg>{{ reminderEscalation }}
+            </div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button onClick="{{ snoozeReminder }}" style="flex:1;height:44px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--foreground);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">Snooze 1h</button>
+            <button onClick="{{ completeFromReminder }}" style="flex:1.4;height:44px;border-radius:12px;border:none;background:linear-gradient(90deg,var(--orange),var(--red));color:#fff;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit">Complete now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ WIRING CONFIG MODAL ============ -->
+  <sc-if value="{{ showWiringConfig }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeWiringConfig }}" style="position:fixed;inset:0;background:rgba(3,20,60,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:92;animation:eden-dim .2s ease;padding:24px">
+
+      <!-- Notify: message template editor -->
+      <sc-if value="{{ cfgIsNotify }}" hint-placeholder-val="{{ true }}">
+      <div style="width:560px;max-width:100%;background:#fff;border-radius:20px;box-shadow:0 30px 80px -20px rgba(3,20,60,.5);animation:eden-pop .3s ease;overflow:hidden">
+        <div style="padding:22px 26px;border-bottom:1px solid var(--border)">
+          <div style="font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--primary)">MESSAGE TEMPLATE · NOTIFY</div>
+          <div style="font-size:19px;font-weight:800;margin-top:3px">On {{ cfgEvent }}</div>
+        </div>
+        <div style="padding:24px 26px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:8px">Message</div>
+          <textarea value="{{ cfgTemplate }}" onChange="{{ onTemplateChange }}" rows="3" style="width:100%;border:1px solid var(--border);border-radius:14px;padding:14px 16px;font-family:inherit;font-size:14px;color:var(--foreground);resize:vertical;outline:none;line-height:1.5"></textarea>
+          <div style="font-size:12.5px;color:var(--gray);margin:16px 0 8px">Insert a field — only fields on this event's payload are allowed:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <sc-for list="{{ cfgFields }}" as="f" hint-placeholder-count="4">
+              <button onClick="{{ f.onClick }}" style="{{ f.style }}">{{ f.name }}</button>
+            </sc-for>
+          </div>
+          <div style="margin-top:20px;background:#f8fafd;border:1px solid var(--border);border-radius:14px;padding:16px">
+            <div style="font-size:11.5px;font-weight:800;letter-spacing:.04em;color:var(--gray);margin-bottom:8px">LIVE PREVIEW · SAMPLE DATA</div>
+            <div style="font-size:14px;color:var(--foreground);line-height:1.5">{{ cfgPreview }}</div>
+          </div>
+          <div style="font-size:13px;font-weight:700;margin:20px 0 8px">Delivery channel</div>
+          <div style="display:flex;gap:10px">
+            <sc-for list="{{ cfgChannels }}" as="c" hint-placeholder-count="3">
+              <button onClick="{{ c.onClick }}" style="{{ c.style }}">
+                <sc-if value="{{ c.isBell }}" hint-placeholder-val="{{ true }}">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{ c.iconColor }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                </sc-if>
+                <sc-if value="{{ c.isMail }}" hint-placeholder-val="{{ false }}">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{ c.iconColor }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
+                </sc-if>
+                <sc-if value="{{ c.isSms }}" hint-placeholder-val="{{ false }}">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{ c.iconColor }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </sc-if>
+                {{ c.label }}
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="padding:16px 26px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px">
+          <button onClick="{{ closeWiringConfig }}" style="height:42px;padding:0 20px;border-radius:11px;border:1px solid var(--border);background:#fff;color:var(--foreground);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">Cancel</button>
+          <button onClick="{{ saveWiringConfig }}" style="height:42px;padding:0 24px;border-radius:11px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">Save template</button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ScheduleReminder: timing control -->
+      <sc-if value="{{ cfgIsReminder }}" hint-placeholder-val="{{ false }}">
+      <div style="width:520px;max-width:100%;background:#fff;border-radius:20px;box-shadow:0 30px 80px -20px rgba(3,20,60,.5);animation:eden-pop .3s ease;overflow:hidden">
+        <div style="padding:22px 26px;border-bottom:1px solid var(--border)">
+          <div style="font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--orange)">REMINDER TIMING · SCHEDULE REMINDER</div>
+          <div style="font-size:19px;font-weight:800;margin-top:3px">Base interval</div>
+        </div>
+        <div style="padding:24px 26px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <input type="number" value="{{ cfgBase }}" onChange="{{ onBaseChange }}" min="6" step="1" style="width:110px;height:52px;border:1px solid var(--border);border-radius:14px;padding:0 16px;font-family:inherit;font-size:22px;font-weight:800;color:var(--foreground);outline:none;text-align:center">
+            <div style="font-size:15px;color:var(--gray)">hours between reminders while the deadline is far away.</div>
+          </div>
+          <div style="margin-top:22px;background:#fff8f4;border:1px solid #ffe0d3;border-radius:16px;padding:18px 20px">
+            <div style="font-size:12px;font-weight:800;letter-spacing:.04em;color:var(--orange);margin-bottom:14px">AUTO-ESCALATION AS THE DEADLINE NEARS</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <div style="text-align:center;flex:1">
+                <div style="font-size:24px;font-weight:800;color:var(--foreground)">{{ escBase }}</div>
+                <div style="font-size:11.5px;color:var(--gray);margin-top:3px">&gt; 50% time left</div>
+              </div>
+              <svg width="22" height="14" viewBox="0 0 22 14" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round"><path d="M2 7h16"/><path d="m14 3 4 4-4 4"/></svg>
+              <div style="text-align:center;flex:1">
+                <div style="font-size:24px;font-weight:800;color:var(--orange)">{{ escHalf }}</div>
+                <div style="font-size:11.5px;color:var(--gray);margin-top:3px">20–50% left</div>
+              </div>
+              <svg width="22" height="14" viewBox="0 0 22 14" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round"><path d="M2 7h16"/><path d="m14 3 4 4-4 4"/></svg>
+              <div style="text-align:center;flex:1">
+                <div style="font-size:24px;font-weight:800;color:var(--red)">{{ escQuarter }}</div>
+                <div style="font-size:11.5px;color:var(--gray);margin-top:3px">&lt; 20% left</div>
+              </div>
+            </div>
+            <div style="font-size:12px;color:var(--gray);margin-top:14px;line-height:1.5;text-align:center">Interval halves at 20–50% of time remaining, quarters under 20% — never shorter than 6h.</div>
+          </div>
+        </div>
+        <div style="padding:16px 26px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px">
+          <button onClick="{{ closeWiringConfig }}" style="height:42px;padding:0 20px;border-radius:11px;border:1px solid var(--border);background:#fff;color:var(--foreground);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">Cancel</button>
+          <button onClick="{{ saveWiringConfig }}" style="height:42px;padding:0 24px;border-radius:11px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">Save timing</button>
+        </div>
+      </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <!-- ============ NEW SCHEDULMENT MODAL ============ -->
+  <sc-if value="{{ showNewSchedul }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeSchedul }}" style="position:fixed;inset:0;background:rgba(3,20,60,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:92;animation:eden-dim .2s ease;padding:24px">
+      <div style="width:560px;max-width:100%;background:#fff;border-radius:20px;box-shadow:0 30px 80px -20px rgba(3,20,60,.5);animation:eden-pop .3s ease;overflow:hidden;max-height:90vh;display:flex;flex-direction:column">
+        <div style="padding:22px 26px;border-bottom:1px solid var(--border)">
+          <div style="font-size:19px;font-weight:800">New schedulment</div>
+          <div style="font-size:13px;color:var(--gray);margin-top:2px">Auto-reassign a mission on a fixed calendar recurrence.</div>
+        </div>
+        <div style="padding:24px 26px;overflow-y:auto">
+          <div style="font-size:13px;font-weight:700;margin-bottom:8px">Mission</div>
+          <input value="{{ nsMission }}" onChange="{{ onNsMission }}" placeholder="e.g. Weekly Timesheet Submission" style="width:100%;height:46px;border:1px solid var(--border);border-radius:13px;padding:0 16px;font-family:inherit;font-size:14px;color:var(--foreground);outline:none">
+
+          <div style="font-size:13px;font-weight:700;margin:20px 0 8px">Recurrence</div>
+          <div style="display:flex;gap:10px">
+            <sc-for list="{{ recOptions }}" as="r" hint-placeholder-count="3">
+              <button onClick="{{ r.onClick }}" style="{{ r.style }}">
+                <div style="{{ r.labelStyle }}">{{ r.label }}</div>
+                <div style="{{ r.anchorStyle }}">{{ r.anchor }}</div>
+              </button>
+            </sc-for>
+          </div>
+
+          <div style="font-size:13px;font-weight:700;margin:20px 0 8px">Audience</div>
+          <div style="display:flex;gap:10px;margin-bottom:12px">
+            <button onClick="{{ onAudAll }}" style="{{ audAllStyle }}">All employees</button>
+            <button onClick="{{ onAudList }}" style="{{ audListStyle }}">Specific employees</button>
+          </div>
+          <sc-if value="{{ audList }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:220px;overflow-y:auto;padding:2px">
+              <sc-for list="{{ empList }}" as="e" hint-placeholder-count="6">
+                <div onClick="{{ e.onClick }}" style="{{ e.style }}">
+                  <span style="{{ e.boxStyle }}">
+                    <sc-if value="{{ e.checked }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></sc-if>
+                  </span>
+                  <span style="font-size:13.5px;font-weight:600">{{ e.name }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+        <div style="padding:16px 26px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px">
+          <button onClick="{{ closeSchedul }}" style="height:42px;padding:0 20px;border-radius:11px;border:1px solid var(--border);background:#fff;color:var(--foreground);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">Cancel</button>
+          <button onClick="{{ saveSchedul }}" style="height:42px;padding:0 24px;border-radius:11px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">Create</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ EDIT ITEM MODAL (mission / badge) ============ -->
+  <sc-if value="{{ showEditItem }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeEditItem }}" style="position:fixed;inset:0;background:rgba(3,20,60,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:92;animation:eden-dim .2s ease;padding:24px">
+      <div style="width:520px;max-width:100%;background:#fff;border-radius:20px;box-shadow:0 30px 80px -20px rgba(3,20,60,.5);animation:eden-pop .3s ease;overflow:hidden">
+        <div style="padding:22px 26px;border-bottom:1px solid var(--border);font-size:19px;font-weight:800;text-transform:capitalize">{{ itemTitle }}</div>
+        <div style="padding:24px 26px">
+          <div style="font-size:13px;font-weight:700;margin-bottom:8px">Name</div>
+          <input value="{{ itemName }}" onChange="{{ onName }}" style="width:100%;height:46px;border:1px solid var(--border);border-radius:13px;padding:0 16px;font-family:inherit;font-size:14px;color:var(--foreground);outline:none">
+
+          <sc-if value="{{ itemIsMission }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:13px;font-weight:700;margin:18px 0 8px">Description</div>
+            <textarea value="{{ itemDesc }}" onChange="{{ onDesc }}" rows="2" style="width:100%;border:1px solid var(--border);border-radius:13px;padding:12px 16px;font-family:inherit;font-size:14px;color:var(--foreground);outline:none;resize:vertical"></textarea>
+            <div style="display:flex;gap:16px;margin-top:18px">
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:700;margin-bottom:8px">Duration (days)</div>
+                <input type="number" value="{{ itemDuration }}" onChange="{{ onDuration }}" placeholder="none" min="0" style="width:100%;height:46px;border:1px solid var(--border);border-radius:13px;padding:0 16px;font-family:inherit;font-size:14px;color:var(--foreground);outline:none">
+                <div style="font-size:11.5px;color:var(--gray);margin-top:6px">Leave empty for no deadline, reminders, or expiry.</div>
+              </div>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:700;margin-bottom:8px">XP reward</div>
+                <input type="number" value="{{ itemXp }}" onChange="{{ onXp }}" min="0" step="50" style="width:100%;height:46px;border:1px solid var(--border);border-radius:13px;padding:0 16px;font-family:inherit;font-size:14px;color:var(--foreground);outline:none">
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ itemIsBadge }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:13px;font-weight:700;margin:18px 0 8px">Tier</div>
+            <div style="display:flex;gap:8px">
+              <sc-for list="{{ tierOptions }}" as="t" hint-placeholder-count="4">
+                <button onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</button>
+              </sc-for>
+            </div>
+            <div style="font-size:13px;font-weight:700;margin:18px 0 8px">Unlock at (missions completed)</div>
+            <input type="number" value="{{ itemThreshold }}" onChange="{{ onThreshold }}" min="1" style="width:140px;height:46px;border:1px solid var(--border);border-radius:13px;padding:0 16px;font-family:inherit;font-size:14px;color:var(--foreground);outline:none">
+          </sc-if>
+        </div>
+        <div style="padding:16px 26px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px">
+          <button onClick="{{ closeEditItem }}" style="height:42px;padding:0 20px;border-radius:11px;border:1px solid var(--border);background:#fff;color:var(--foreground);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">Cancel</button>
+          <button onClick="{{ saveItem }}" style="height:42px;padding:0 24px;border-radius:11px;border:none;background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit">Save</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ PROFILE DRAWER ============ -->
+  <sc-if value="{{ profileOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeProfile }}" style="position:fixed;inset:0;background:rgba(3,20,60,.4);backdrop-filter:blur(2px);z-index:100;animation:eden-dim .25s ease"></div>
+  </sc-if>
+  <div style="{{ profileDrawerStyle }}">
+    <div style="background:var(--gradient-primary-to-secondary-2);color:#fff;padding:24px 22px 26px;position:relative;overflow:hidden;cursor:grab" onMouseDown="{{ startProfileDrag }}">
+      <div style="position:absolute;inset:0;background:radial-gradient(120% 120% at 100% 0,rgba(255,255,255,.25),transparent 55%);pointer-events:none"></div>
+      <button onClick="{{ closeProfile }}" aria-label="Close" style="position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:9px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div style="width:66px;height:66px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:24px;position:relative">{{ profileInitials }}</div>
+      <div style="font-size:20px;font-weight:800;margin-top:14px;position:relative">{{ profileName }}</div>
+      <div style="font-size:13px;opacity:.9;position:relative">{{ profileRole }}</div>
+      <sc-if value="{{ profileIsEmp }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top:16px;position:relative">
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;opacity:.9;margin-bottom:6px"><span>Level {{ profileLevel }}</span><span>{{ profileXpText }}</span></div>
+          <div style="height:8px;border-radius:6px;background:rgba(255,255,255,.28);overflow:hidden"><div style="height:100%;border-radius:6px;background:#fff;width:{{ profileXpPct }}%"></div></div>
+        </div>
+      </sc-if>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:12px 22px">
+      <sc-for list="{{ profileRows }}" as="r" hint-placeholder-count="6">
+        <div style="display:flex;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid #f1f4fa">
+          <span style="font-size:13px;color:var(--gray);font-weight:600;flex-shrink:0">{{ r.k }}</span>
+          <span style="font-size:13px;color:var(--foreground);font-weight:600;text-align:right">{{ r.v }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="padding:16px 22px;border-top:1px solid var(--border)">
+      <button onClick="{{ doSignOut }}" style="width:100%;height:44px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--foreground);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>Sign out
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ LOGIN GATE ============ -->
+  <sc-if value="{{ notAuthed }}" hint-placeholder-val="{{ true }}">
+    <div style="position:fixed;inset:0;z-index:100;display:flex;background:#fff">
+      <!-- left brand panel -->
+      <div style="width:44%;min-width:360px;background:var(--gradient-primary-to-secondary-2);color:#fff;padding:52px 48px;display:flex;flex-direction:column;position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background:radial-gradient(120% 90% at 100% 0,rgba(255,255,255,.25),transparent 55%);pointer-events:none"></div>
+        <div style="display:flex;align-items:center;position:relative">
+          <img src="assets/logos/gamitools-logo-light.svg" alt="GamiTool" style="height:30px;flex-shrink:0;filter:drop-shadow(0 4px 12px rgba(0,0,0,.18))">
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;position:relative;max-width:420px">
+          <h1 style="font-size:34px;font-weight:800;line-height:1.15;margin:0 0 14px;text-wrap:pretty">Missions, XP and rewards — wired to your org's events.</h1>
+          <p style="font-size:15px;opacity:.9;line-height:1.55;margin:0">Sign in to complete missions and earn badges, or manage the rules that drive them. Everything updates in real time.</p>
+        </div>
+        <div style="position:relative;font-size:12.5px;opacity:.8">Internal tool · OCP · GamiTool engine</div>
+      </div>
+
+      <!-- right form panel -->
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px;background:#eef4fd">
+        <div style="width:100%;max-width:420px;background:#fff;border:1px solid var(--card-border);border-radius:22px;box-shadow:0 20px 60px -24px rgba(0,53,128,.28);padding:36px 34px">
+          <h2 style="font-size:23px;font-weight:800;margin:0 0 4px">Welcome back</h2>
+          <p style="font-size:14px;color:var(--gray);margin:0 0 22px">Sign in to your EDEN workspace.</p>
+
+          <div style="font-size:12.5px;font-weight:700;color:var(--foreground);margin-bottom:9px">I'm signing in as</div>
+          <div style="display:flex;gap:10px;margin-bottom:22px">
+            <button onClick="{{ setLoginEmp }}" style="{{ loginEmpStyle }}">
+              <div style="display:flex;align-items:center;gap:8px">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+                <span style="font-weight:700;font-size:14px;color:var(--foreground)">Employee</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--gray);margin-top:3px">Missions & rewards</div>
+            </button>
+            <button onClick="{{ setLoginAdmin }}" style="{{ loginAdminStyle }}">
+              <div style="display:flex;align-items:center;gap:8px">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 7.7 8 10 4.6-2.3 8-5 8-10V6z"/></svg>
+                <span style="font-weight:700;font-size:14px;color:var(--foreground)">Admin · HR</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--gray);margin-top:3px">Configure the engine</div>
+            </button>
+          </div>
+
+          <div style="font-size:12.5px;font-weight:700;color:var(--foreground);margin-bottom:7px">Work email</div>
+          <input value="{{ loginEmail }}" readonly style="width:100%;height:48px;border:1px solid var(--border);border-radius:14px;padding:0 16px;font-family:inherit;font-size:14px;color:var(--foreground);outline:none;margin-bottom:14px;background:#f9fafb">
+          <div style="font-size:12.5px;font-weight:700;color:var(--foreground);margin-bottom:7px">Password</div>
+          <input type="password" value="ocp-eden-2026" readonly style="width:100%;height:48px;border:1px solid var(--border);border-radius:14px;padding:0 16px;font-family:inherit;font-size:14px;color:var(--foreground);outline:none;margin-bottom:22px;background:#f9fafb">
+
+          <button onClick="{{ doSignIn }}" style="width:100%;height:50px;border-radius:14px;border:none;background:var(--primary);color:#fff;font-weight:800;font-size:15px;cursor:pointer;font-family:inherit;box-shadow:0 8px 20px -8px rgba(90,123,255,.9)">Sign in</button>
+          <div style="text-align:center;font-size:12px;color:#aab3c6;margin-top:16px">Single sign-on via OCP identity · demo credentials pre-filled</div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    const mk = (svg)=>React.createElement('span',{style:{display:'flex'},dangerouslySetInnerHTML:{__html:svg}});
+    this.mk = mk;
+    this.state = {
+      authed:false,
+      loginRole:'employee',
+      role:'employee',
+      screen:'e-dashboard',
+      missionFilter:'all',
+      bellOpen:false,
+      emp:{ first:'Fatima', name:'Fatima Arif', initials:'FA', level:4, rankTitle:'Onboarding Explorer',
+            xpInto:1150, xpNeed:1250, totalXp:6150, completedCount:5, badgeCount:3 },
+      missions:[
+        {id:'m1',name:'Read the Employee Handbook',description:'Cover-to-cover read of the company handbook and code of conduct.',status:'assigned',durationDays:null,xp:200},
+        {id:'m2',name:'Complete Security Awareness Training',description:'Finish the mandatory security & phishing-awareness module.',status:'assigned',durationDays:2,xp:300},
+        {id:'m3',name:'Submit Q3 Expense Report',description:'Log and submit outstanding Q3 travel expenses in the portal.',status:'assigned',durationDays:1,xp:150,urgentHrs:6},
+        {id:'m4',name:'Update Emergency Contact',description:'Confirm your emergency contact details are current.',status:'assigned',durationDays:null,xp:100},
+        {id:'m5',name:'Set Up Dev Environment',description:'Install tooling and clone the starter repositories.',status:'completed',durationDays:3,xp:250},
+        {id:'m6',name:'Onboarding Buddy Intro Call',description:'Meet your assigned onboarding buddy for a 30-minute intro.',status:'completed',durationDays:null,xp:100},
+        {id:'m7',name:'Annual Compliance Quiz',description:'Pass the yearly compliance knowledge check.',status:'expired',durationDays:2,xp:200},
+      ],
+      badges:[
+        {id:'b1',name:'First Steps',tier:'bronze',threshold:1},
+        {id:'b2',name:'Getting Started',tier:'bronze',threshold:3},
+        {id:'b3',name:'Momentum',tier:'silver',threshold:5},
+        {id:'b4',name:'Consistent',tier:'silver',threshold:6},
+        {id:'b5',name:'Committed',tier:'gold',threshold:10},
+        {id:'b6',name:'Trailblazer',tier:'gold',threshold:20},
+        {id:'b7',name:'Legend',tier:'diamond',threshold:40},
+      ],
+      notifications:[
+        {id:'n1',kind:'reminder',title:'Expense report due soon',body:'Submit Q3 Expense Report expires in 6 hours.',time:'12m ago',read:false},
+        {id:'n2',kind:'general',ev:'level',title:'You reached Level 4',body:'Onboarding Explorer unlocked. Keep the momentum going.',time:'3h ago',read:false},
+        {id:'n3',kind:'general',ev:'badge',title:'Badge unlocked: Momentum',body:'You completed 5 missions and earned the Momentum badge.',time:'3h ago',read:false},
+        {id:'n4',kind:'general',ev:'assign',title:'New mission assigned',body:'Complete Security Awareness Training was added to your list.',time:'5h ago',read:true},
+      ],
+      activity:[
+        {id:'a1',ev:'complete',text:'Fatima completed Set Up Dev Environment',time:'2h ago'},
+        {id:'a2',ev:'badge',text:'Fatima unlocked the Momentum badge',time:'3h ago'},
+        {id:'a3',ev:'level',text:'Fatima leveled up to Level 4',time:'3h ago'},
+        {id:'a4',ev:'assign',text:'Fatima was assigned Security Awareness Training',time:'5h ago'},
+        {id:'a5',ev:'reminder',text:'Reminder sent: Submit Q3 Expense Report',time:'6h ago'},
+      ],
+      toasts:[],
+      overlays:[],
+      reminder:null,
+      // ---- admin ----
+      navWidth:238,
+      profileOpen:false,
+      selectedWire:null,
+      nodePos:{
+        'ev:MissionAssigned':{x:24,y:16},'ev:MissionCompleted':{x:24,y:112},'ev:MissionExpired':{x:24,y:208},
+        'ev:BadgeUnlocked':{x:24,y:304},'ev:LevelUp':{x:24,y:400},'ev:ReminderDue':{x:24,y:496},
+        'ac:Notify':{x:470,y:8},'ac:GrantXP':{x:470,y:88},'ac:GrantBadge':{x:470,y:168},'ac:ScheduleReminder':{x:470,y:248},
+        'ac:CancelReminder':{x:470,y:328},'ac:CheckLevelThreshold':{x:470,y:408},'ac:EmitEvent':{x:470,y:488},
+      },
+      selectedEvent:'MissionAssigned',
+      wirings:[
+        {id:'w1',event:'MissionAssigned',action:'ScheduleReminder',baseInterval:24},
+        {id:'w2',event:'ReminderDue',action:'Notify',template:'Reminder: {{missionName}} is due in {{daysLeft}} day(s).',channel:'in-app'},
+        {id:'w3',event:'MissionCompleted',action:'GrantXP'},
+        {id:'w4',event:'MissionCompleted',action:'CheckLevelThreshold'},
+        {id:'w5',event:'MissionCompleted',action:'GrantBadge'},
+        {id:'w6',event:'LevelUp',action:'Notify',template:'Congrats {{employeeName}} — you reached Level {{newLevel}}!',channel:'in-app'},
+      ],
+      editWiring:null,
+      schedulments:[
+        {id:'s1',mission:'Weekly Timesheet Submission',recurrence:'weekly',audience:'all',employees:[],next:'Mon, Aug 4 · 00:00'},
+        {id:'s2',mission:'Daily Standup Check-in',recurrence:'daily',audience:'all',employees:[],next:'Tomorrow · 00:00'},
+        {id:'s3',mission:'Monthly Security Refresher',recurrence:'monthly',audience:'list',employees:['Fatima Arif','Yassine El Amrani','Omar Idrissi'],next:'Sep 1 · 00:00'},
+      ],
+      newSchedul:null,
+      catalogTab:'missions',
+      editItem:null,
+      engineActivity:[
+        {id:'g1',ev:'complete',who:'Fatima Arif',text:'completed Set Up Dev Environment',type:'MissionCompleted',time:'just now'},
+        {id:'g2',ev:'level',who:'Yassine El Amrani',text:'leveled up to Level 6',type:'LevelUp',time:'1m ago'},
+        {id:'g3',ev:'reminder',who:'Salma Bouazza',text:'was sent a reminder for Submit Q3 Expense Report',type:'ReminderDue',time:'2m ago'},
+        {id:'g4',ev:'badge',who:'Omar Idrissi',text:'unlocked the Trailblazer badge',type:'BadgeUnlocked',time:'4m ago'},
+        {id:'g5',ev:'assign',who:'Lina Berrada',text:'was assigned Annual Compliance Quiz',type:'MissionAssigned',time:'6m ago'},
+        {id:'g6',ev:'expire',who:'Karim Tazi',text:'let Fire-Safety Refresher expire',type:'MissionExpired',time:'9m ago'},
+        {id:'g7',ev:'complete',who:'Nadia Cherkaoui',text:'completed Onboarding Buddy Intro Call',type:'MissionCompleted',time:'12m ago'},
+      ],
+    };
+    this._nid=100; this._reminderShown=false;
+
+    // ---- fixed, developer-owned structure (admin can't change these) ----
+    this.EMPLOYEES=['Fatima Arif','Yassine El Amrani','Salma Bouazza','Omar Idrissi','Nadia Cherkaoui','Karim Tazi','Lina Berrada','Hamza Fassi'];
+    this.EVENTS=[
+      {id:'MissionAssigned',label:'Mission Assigned'},
+      {id:'MissionCompleted',label:'Mission Completed'},
+      {id:'MissionExpired',label:'Mission Expired'},
+      {id:'BadgeUnlocked',label:'Badge Unlocked'},
+      {id:'LevelUp',label:'Level Up'},
+      {id:'ReminderDue',label:'Reminder Due'},
+    ];
+    this.ACTIONS=[
+      {id:'Notify',label:'Notify',desc:'Send a message on a channel'},
+      {id:'GrantXP',label:'Grant XP',desc:'Award experience points'},
+      {id:'GrantBadge',label:'Grant Badge',desc:'Check & award badges'},
+      {id:'ScheduleReminder',label:'Schedule Reminder',desc:'Start deadline reminders'},
+      {id:'CancelReminder',label:'Cancel Reminder',desc:'Stop pending reminders'},
+      {id:'CheckLevelThreshold',label:'Check Level',desc:'Evaluate level thresholds'},
+      {id:'EmitEvent',label:'Emit Event',desc:'Fire a downstream event'},
+    ];
+    this.COMPAT={
+      MissionAssigned:['Notify','ScheduleReminder','EmitEvent'],
+      MissionCompleted:['Notify','GrantXP','GrantBadge','CheckLevelThreshold','CancelReminder','EmitEvent'],
+      MissionExpired:['Notify','CancelReminder','EmitEvent'],
+      BadgeUnlocked:['Notify','EmitEvent'],
+      LevelUp:['Notify','EmitEvent'],
+      ReminderDue:['Notify','ScheduleReminder','EmitEvent'],
+    };
+    this.PAYLOADS={
+      MissionAssigned:['employeeName','missionName','daysLeft','dueDate'],
+      MissionCompleted:['employeeName','missionName','xpEarned','newLevel'],
+      MissionExpired:['employeeName','missionName'],
+      BadgeUnlocked:['employeeName','badgeName','tier'],
+      LevelUp:['employeeName','newLevel','rankTitle'],
+      ReminderDue:['employeeName','missionName','daysLeft','hoursLeft'],
+    };
+    this.SAMPLE={employeeName:'Fatima Arif',missionName:'Security Awareness Training',daysLeft:'2',dueDate:'Aug 3',xpEarned:'300',newLevel:'5',rankTitle:'Onboarding Champion',badgeName:'Momentum',tier:'Silver',hoursLeft:'6'};
+  }
+
+  armReminder(){
+    clearTimeout(this._remT);
+    this._remT = setTimeout(()=>{
+      if(this.state.authed && this.state.role==='employee' && !this._reminderShown){
+        this._reminderShown=true;
+        this.setState({reminder:{mission:'Submit Q3 Expense Report',countdown:'6h 00m',
+          escalation:'Reminders escalate as the deadline nears: 24h \u2192 12h \u2192 6h.'}});
+      }
+    },3800);
+  }
+  componentDidMount(){
+    this._winMove=(e)=>{ this.onResizeMove(e); this.onProfileDragMove(e); if(this._link||this._dragNode) this.onGraphMove(e); };
+    this._winUp=(e)=>{ this.endResize(); this.endProfileDrag(); this.onGraphUp(e); };
+    window.addEventListener('mousemove',this._winMove);
+    window.addEventListener('mouseup',this._winUp);
+    // live WebSocket-style pushes
+    const pool=[
+      {kind:'general',ev:'assign',title:'New mission assigned',body:'Quarterly Fire-Safety Refresher was added to your list.',act:'Fatima was assigned Quarterly Fire-Safety Refresher'},
+      {kind:'general',ev:'system',title:'Leaderboard update',body:'You moved up to #4 on the team leaderboard this week.',act:'Fatima moved up to #4 on the leaderboard'},
+      {kind:'reminder',ev:'reminder',title:'Deadline approaching',body:'Complete Security Awareness Training is due in 2 days.',act:'Reminder sent: Complete Security Awareness Training'},
+      {kind:'general',ev:'system',title:'Teammate activity',body:'Yassine El Amrani just reached Level 6.',act:'Yassine El Amrani reached Level 6'},
+    ];
+    const engPool=[
+      {ev:'complete',who:'Salma Bouazza',text:'completed Read the Employee Handbook',type:'MissionCompleted'},
+      {ev:'assign',who:'Hamza Fassi',text:'was assigned Security Awareness Training',type:'MissionAssigned'},
+      {ev:'reminder',who:'Omar Idrissi',text:'was sent a reminder for Submit Q3 Expense Report',type:'ReminderDue'},
+      {ev:'level',who:'Lina Berrada',text:'leveled up to Level 3',type:'LevelUp'},
+      {ev:'badge',who:'Karim Tazi',text:'unlocked the Committed badge',type:'BadgeUnlocked'},
+      {ev:'expire',who:'Nadia Cherkaoui',text:'let Annual Compliance Quiz expire',type:'MissionExpired'},
+    ];
+    let i=0, j=0;
+    this._liveT=setInterval(()=>{
+      // org-wide engine feed is always live for the admin
+      const e=engPool[j%engPool.length]; j++;
+      const gid=++this._nid;
+      this.setState(s=>({engineActivity:[{id:'g'+gid,ev:e.ev,who:e.who,text:e.text,type:e.type,time:'just now'},...s.engineActivity].slice(0,40)}));
+      if(this.state.role!=='employee') return;
+      const p=pool[i%pool.length]; i++;
+      const id=++this._nid;
+      this.setState(s=>({
+        notifications:[{id:'n'+id,kind:p.kind,ev:p.ev,title:p.title,body:p.body,time:'just now',read:false},...s.notifications],
+        activity:[{id:'a'+id,ev:p.ev,text:p.act,time:'just now'},...s.activity].slice(0,5),
+      }));
+      this.pushToast({ev:p.ev,title:p.title,body:p.body});
+    },7000);
+  }
+  componentWillUnmount(){ clearTimeout(this._remT); clearInterval(this._liveT); }
+
+  pushToast(t){
+    const id=++this._nid;
+    this.setState(s=>({toasts:[{id,...t},...s.toasts].slice(0,4)}));
+    setTimeout(()=>{ this.setState(s=>({toasts:s.toasts.filter(x=>x.id!==id)})); },5200);
+  }
+
+  // ================= RULE GRAPH (drag & drop) =================
+  setCanvasRef(el){ this._canvas=el; }
+  nodeDown(kind,key,e){ e.stopPropagation();
+    const pos=this.state.nodePos[key]||{x:0,y:0}; const r=this._canvas?this._canvas.getBoundingClientRect():{left:0,top:0};
+    this._dragNode={kind,key,dx:(e.clientX-r.left)-pos.x,dy:(e.clientY-r.top)-pos.y}; }
+  portDown(evKey,e){ e.stopPropagation(); e.preventDefault();
+    const r=this._canvas?this._canvas.getBoundingClientRect():{left:0,top:0};
+    this._link={from:evKey}; this._linkTarget=null; this._linkEnd={x:e.clientX-r.left,y:e.clientY-r.top}; this.forceUpdate(); }
+  portEnter(acKey){ if(this._link && this.COMPAT[this._link.from] && this.COMPAT[this._link.from].includes(acKey)) this._linkTarget=acKey; }
+  portLeave(acKey){ if(this._linkTarget===acKey) this._linkTarget=null; }
+  onGraphMove(e){ if(!this._canvas) return; const r=this._canvas.getBoundingClientRect();
+    const x=e.clientX-r.left, y=e.clientY-r.top;
+    if(this._dragNode){ const {key,dx,dy}=this._dragNode;
+      const nx=Math.max(0,Math.min(r.width-206,x-dx)), ny=Math.max(0,Math.min(r.height-58,y-dy));
+      this.setState(st=>({nodePos:{...st.nodePos,[key]:{x:nx,y:ny}}})); }
+    else if(this._link){ this._linkEnd={x,y}; this.forceUpdate(); } }
+  onGraphUp(){ if(this._link){ if(this._linkTarget) this.addWiringByKeys(this._link.from,this._linkTarget);
+      this._link=null; this._linkTarget=null; this._linkEnd=null; this.forceUpdate(); } this._dragNode=null; }
+  addWiringByKeys(evKey,acKey){
+    if(!this.COMPAT[evKey]||!this.COMPAT[evKey].includes(acKey)) return;
+    if(this.state.wirings.some(w=>w.event===evKey&&w.action===acKey)) return;
+    const w={id:'w'+(++this._nid),event:evKey,action:acKey};
+    if(acKey==='ScheduleReminder') w.baseInterval=24;
+    if(acKey==='Notify'){ w.template='{{missionName}} — notification for {{employeeName}}.'; w.channel='in-app'; }
+    this.setState(st=>({wirings:[...st.wirings,w]})); }
+  selectWire(id){ this.setState({selectedWire:id}); }
+
+  // ---- sidebar resize ----
+  startResize(e){ e.preventDefault(); this._resizing=true; document.body.style.userSelect='none'; document.body.style.cursor='col-resize'; }
+  onResizeMove(e){ if(!this._resizing) return; const w=Math.max(64,Math.min(300,e.clientX)); this.setState({navWidth:w}); }
+  endResize(){ if(!this._resizing) return; this._resizing=false; document.body.style.userSelect=''; document.body.style.cursor='';
+    // snap
+    const w=this.state.navWidth; this.setState({navWidth:w<150?72:238}); }
+  toggleNav(){ this.setState(s=>({navWidth:s.navWidth<150?238:72})); }
+
+  // ---- profile drawer ----
+  openProfile(){ this.setState({profileOpen:true}); this._pdrag=null; }
+  closeProfile(){ this.setState({profileOpen:false}); }
+  startProfileDrag(e){ this._pdrag={x0:e.clientX,dx:0}; }
+  onProfileDragMove(e){ if(!this._pdrag) return; this._pdrag.dx=Math.max(0,e.clientX-this._pdrag.x0); this.forceUpdate(); }
+  endProfileDrag(){ if(!this._pdrag) return; if(this._pdrag.dx>90) this.closeProfile(); this._pdrag=null; this.forceUpdate(); }
+
+  // ---- auth ----
+  setLoginRole(r){ this.setState({loginRole:r}); }
+  signIn(){ const r=this.state.loginRole;
+    this._reminderShown=false;
+    this.setState({authed:true,role:r,screen:r==='employee'?'e-dashboard':'a-dashboard',bellOpen:false,reminder:null});
+    if(r==='employee') this.armReminder(); }
+  signOut(){ this.setState({authed:false,bellOpen:false,reminder:null,overlays:[]}); }
+
+  // ---- navigation ----
+  setRole(role){ this._reminderShown=false; this.setState({role,screen:role==='employee'?'e-dashboard':'a-dashboard',bellOpen:false,reminder:null}); if(role==='employee') this.armReminder(); }
+  go(screen){ this.setState({screen,bellOpen:false}); }
+  toggleBell(){ this.setState(s=>({bellOpen:!s.bellOpen})); }
+  markAllRead(){ this.setState(s=>({notifications:s.notifications.map(n=>({...n,read:true}))})); }
+
+  // ---- mission completion ----
+  completeMission(id){
+    const st=this.state; const m=st.missions.find(x=>x.id===id);
+    if(!m||m.status!=='assigned') return;
+    const missions=st.missions.map(x=>x.id===id?{...x,status:'completed'}:x);
+    const completedCount=st.emp.completedCount+1;
+    let {level,xpInto,xpNeed,totalXp,rankTitle}=st.emp;
+    totalXp+=m.xp; xpInto+=m.xp;
+    const ranks=['Newcomer','Onboarding Rookie','Onboarding Explorer','Onboarding Trailblazer','Onboarding Champion','Onboarding Legend'];
+    const overlays=[];
+    while(xpInto>=xpNeed){ xpInto-=xpNeed; level+=1; xpNeed=1000+(level-1)*250;
+      rankTitle=ranks[Math.min(level,ranks.length-1)];
+      overlays.push({type:'levelup',level,title:rankTitle}); }
+    // badge check
+    let badgeCount=st.emp.badgeCount;
+    st.badges.forEach(b=>{ if(!(st.emp.completedCount>=b.threshold) && completedCount>=b.threshold){
+      badgeCount+=1; overlays.push({type:'badge',name:b.name,tier:b.tier}); }});
+    const act=[{id:'a'+(++this._nid),ev:'complete',text:'Fatima completed '+m.name,time:'just now'}];
+    overlays.forEach(o=>{ if(o.type==='levelup') act.unshift({id:'a'+(++this._nid),ev:'level',text:'Fatima leveled up to Level '+o.level,time:'just now'});
+      if(o.type==='badge') act.unshift({id:'a'+(++this._nid),ev:'badge',text:'Fatima unlocked the '+o.name+' badge',time:'just now'}); });
+    const nid=++this._nid;
+    this.setState({
+      missions, overlays,
+      emp:{...st.emp,level,xpInto,xpNeed,totalXp,rankTitle,completedCount,badgeCount},
+      activity:[...act,...st.activity].slice(0,5),
+      notifications:[{id:'n'+nid,kind:'general',ev:'complete',title:'Mission completed',body:m.name+' \u2014 +'+m.xp+' XP earned.',time:'just now',read:false},...st.notifications],
+      reminder: st.reminder && st.reminder.mission===m.name ? null : st.reminder,
+    });
+    this.pushToast({ev:'complete',title:'+'+m.xp+' XP',body:m.name+' completed.'});
+  }
+  dismissOverlay(){ this.setState(s=>({overlays:s.overlays.slice(1)})); }
+  snoozeReminder(){ this.setState({reminder:null}); }
+  completeFromReminder(){ const r=this.state.reminder;
+    const m=this.state.missions.find(x=>x.name===r.mission);
+    this.setState({reminder:null});
+    if(m) setTimeout(()=>this.completeMission(m.id),120);
+  }
+
+  // ---- helpers ----
+  navBtn(active,collapsed){ return {display:'flex',alignItems:'center',gap:11,width:'100%',padding:collapsed?'11px 0':'10px 12px',justifyContent:collapsed?'center':'flex-start',border:'none',borderRadius:11,cursor:'pointer',fontFamily:'inherit',fontSize:14,fontWeight:active?700:600,
+    background:active?'var(--light-blue)':'transparent',color:active?'#2563eb':'var(--foreground)',transition:'background .15s'}; }
+  rolePill(active){ return {padding:'7px 15px',border:'none',borderRadius:8,cursor:'pointer',fontFamily:'inherit',fontSize:13.5,fontWeight:700,
+    background:active?'#fff':'transparent',color:active?'var(--primary)':'var(--gray)',boxShadow:active?'0 2px 6px -2px rgba(0,53,128,.2)':'none',transition:'all .15s'}; }
+
+  actionIcon(id){
+    const I={
+      Notify:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
+      GrantXP:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-3 7h5l-3 7"/></svg>',
+      GrantBadge:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="m8.5 14-1.5 7 5-3 5 3-1.5-7"/></svg>',
+      ScheduleReminder:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6M22 6l-3-3"/></svg>',
+      CancelReminder:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="m9 10 6 6M15 10l-6 6"/></svg>',
+      CheckLevelThreshold:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6-6 6 6"/><path d="M12 3v13"/><path d="M5 21h14"/></svg>',
+      EmitEvent:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>',
+    };
+    return I[id]||I.EmitEvent;
+  }
+
+  evIcon(ev){
+    const I={
+      complete:['#22c55e','#dbffe8','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'],
+      level:['#5a7bff','#e9edff','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6-6 6 6"/><path d="M12 3v13"/><path d="M5 21h14"/></svg>'],
+      badge:['#a855f7','#f4e8ff','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="m8.5 14-1.5 7 5-3 5 3-1.5-7"/></svg>'],
+      assign:['#5a7bff','#d3eaff','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7"/><path d="m14.5 3.5 6 6L12 18l-4 1 1-4z"/></svg>'],
+      reminder:['#ff964f','#fff0e6','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>'],
+      system:['#7a86a1','#f2f2f2','<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg>'],
+    };
+    return I[ev]||I.system;
+  }
+
+  // ================= ADMIN handlers =================
+  selectEvent(ev){ this.setState({selectedEvent:ev}); }
+  addWiring(action){
+    const s=this.state, ev=s.selectedEvent;
+    if(!this.COMPAT[ev].includes(action)) return;
+    const w={id:'w'+(++this._nid),event:ev,action};
+    if(action==='ScheduleReminder') w.baseInterval=24;
+    if(action==='Notify'){ w.template='{{missionName}} — notification for {{employeeName}}.'; w.channel='in-app'; }
+    this.setState(st=>({wirings:[...st.wirings,w]}));
+  }
+  removeWiring(id){ this.setState(st=>({wirings:st.wirings.filter(w=>w.id!==id)})); }
+  openWiringConfig(id){ const w=this.state.wirings.find(x=>x.id===id); if(w) this.setState({editWiring:{...w}}); }
+  closeWiringConfig(){ this.setState({editWiring:null}); }
+  saveWiringConfig(){ const e=this.state.editWiring; if(!e) return;
+    this.setState(st=>({wirings:st.wirings.map(w=>w.id===e.id?{...e}:w),editWiring:null})); }
+  setEditField(k,v){ this.setState(st=>({editWiring:{...st.editWiring,[k]:v}})); }
+  insertTplField(f){ this.setState(st=>({editWiring:{...st.editWiring,template:(st.editWiring.template||'')+'{{'+f+'}}'}})); }
+
+  openNewSchedul(){ this.setState({newSchedul:{mission:'',recurrence:'weekly',audience:'all',employees:[]}}); }
+  closeSchedul(){ this.setState({newSchedul:null}); }
+  setSchedul(k,v){ this.setState(st=>({newSchedul:{...st.newSchedul,[k]:v}})); }
+  toggleSchedEmp(name){ this.setState(st=>{ const has=st.newSchedul.employees.includes(name);
+    return {newSchedul:{...st.newSchedul,employees:has?st.newSchedul.employees.filter(n=>n!==name):[...st.newSchedul.employees,name]}}; }); }
+  saveSchedul(){ const n=this.state.newSchedul; if(!n.mission) return;
+    const nextMap={daily:'Tomorrow · 00:00',weekly:'Mon, Aug 4 · 00:00',monthly:'Sep 1 · 00:00'};
+    this.setState(st=>({schedulments:[...st.schedulments,{id:'s'+(++this._nid),...n,next:nextMap[n.recurrence]}],newSchedul:null})); }
+  removeSchedul(id){ this.setState(st=>({schedulments:st.schedulments.filter(x=>x.id!==id)})); }
+
+  setCatalogTab(t){ this.setState({catalogTab:t}); }
+  openEditItem(kind,item){ this.setState({editItem:item?{...item,_kind:kind}:{_kind:kind,_new:true, name:'',description:'',durationDays:null,xp:100,tier:'bronze',threshold:1}}); }
+  closeEditItem(){ this.setState({editItem:null}); }
+  setItemField(k,v){ this.setState(st=>({editItem:{...st.editItem,[k]:v}})); }
+  saveItem(){ const e=this.state.editItem; if(!e||!e.name) return;
+    if(e._kind==='mission'){
+      const row={id:e.id||'m'+(++this._nid),name:e.name,description:e.description,status:e.status||'assigned',durationDays:e.durationDays?Number(e.durationDays):null,xp:Number(e.xp)||0};
+      this.setState(st=>({missions:e._new?[...st.missions,row]:st.missions.map(m=>m.id===e.id?{...m,...row}:m),editItem:null}));
+    } else {
+      const row={id:e.id||'b'+(++this._nid),name:e.name,tier:e.tier,threshold:Number(e.threshold)||1};
+      this.setState(st=>({badges:e._new?[...st.badges,row].sort((a,b)=>a.threshold-b.threshold):st.badges.map(b=>b.id===e.id?{...b,...row}:b),editItem:null}));
+    } }
+  removeItem(kind,id){ if(kind==='mission') this.setState(st=>({missions:st.missions.filter(m=>m.id!==id)}));
+    else this.setState(st=>({badges:st.badges.filter(b=>b.id!==id)})); }
+
+  escSteps(base){ const b=Number(base)||24; const half=Math.max(6,Math.round(b/2)); const q=Math.max(6,Math.round(b/4));
+    return {base:b,half,quarter:q}; }
+
+  // ================= ADMIN view models =================
+  adminVals(){
+    const s=this.state, mk=this.mk;
+    const evLabel=id=>{ const e=this.EVENTS.find(x=>x.id===id); return e?e.label:id; };
+    const acLabel=id=>{ const a=this.ACTIONS.find(x=>x.id===id); return a?a.label:id; };
+    const acColor={Notify:'#5a7bff',GrantXP:'#22c55e',GrantBadge:'#a855f7',ScheduleReminder:'#ff964f',CancelReminder:'#f96767',CheckLevelThreshold:'#003580',EmitEvent:'#7a86a1'};
+
+    // ---- drag & drop graph ----
+    const NODE_W=206, NODE_H=54, acIconMap={};
+    this.ACTIONS.forEach(a=>{ acIconMap[a.id]=this.actionIcon(a.id); });
+    const pos=s.nodePos;
+    const evNode=(id)=>pos['ev:'+id]||{x:0,y:0};
+    const acNode=(id)=>pos['ac:'+id]||{x:0,y:0};
+    const linkFrom=this._link?this._link.from:null;
+    const linkTarget=this._linkTarget||null;
+
+    const graphEvents=this.EVENTS.map(e=>{ const p=evNode(e.id);
+      return {label:e.label,
+        style:{position:'absolute',left:p.x,top:p.y,width:NODE_W,height:NODE_H,display:'flex',alignItems:'center',gap:8,padding:'0 14px',background:'#fff',border:'1px solid '+(linkFrom===e.id?'var(--primary)':'var(--card-border)'),borderRadius:13,boxShadow:linkFrom===e.id?'0 8px 22px -8px rgba(90,123,255,.7)':'0 2px 10px -3px rgba(0,53,128,.16)',cursor:'grab',zIndex:3,boxSizing:'border-box'},
+        onDown:(ev)=>this.nodeDown('ev',e.id,ev),
+        onPortDown:(ev)=>this.portDown(e.id,ev),
+        portStyle:{width:16,height:16,borderRadius:'50%',background:linkFrom===e.id?'var(--primary)':'#fff',border:'2.5px solid var(--primary)',cursor:'crosshair',flexShrink:0,boxShadow:'0 0 0 3px rgba(90,123,255,.14)'}};
+    });
+    const graphActions=this.ACTIONS.map(a=>{ const p=acNode(a.id);
+      const valid=linkFrom && this.COMPAT[linkFrom] && this.COMPAT[linkFrom].includes(a.id);
+      const dim=linkFrom && !valid;
+      const hot=linkTarget===a.id;
+      const col=acColor[a.id]||'#5a7bff';
+      return {label:a.label,titleColor:dim?'#aab3c6':'var(--foreground)',
+        style:{position:'absolute',left:p.x,top:p.y,width:NODE_W,height:NODE_H,display:'flex',alignItems:'center',gap:9,padding:'0 12px',background:hot?'#f2f6ff':'#fff',border:'1.5px solid '+(hot?'var(--primary)':(valid?col:'var(--card-border)')),borderRadius:13,boxShadow:hot?'0 8px 22px -6px rgba(90,123,255,.7)':'0 2px 10px -3px rgba(0,53,128,.16)',cursor:'grab',zIndex:3,boxSizing:'border-box',opacity:dim?.45:1,transition:'opacity .12s,border-color .12s'},
+        onDown:(ev)=>this.nodeDown('ac',a.id,ev),
+        onEnter:()=>this.portEnter(a.id), onLeave:()=>this.portLeave(a.id),
+        icon:mk(acIconMap[a.id]),
+        iconWrap:{width:30,height:30,borderRadius:9,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',color:col,background:'color-mix(in srgb,'+col+' 12%,#fff)'},
+        portStyle:{width:16,height:16,borderRadius:'50%',background:hot?'var(--primary)':'#fff',border:'2.5px solid '+(valid||hot?'var(--primary)':'#cdd8ec'),flexShrink:0,marginLeft:-4}};
+    });
+    const bez=(x1,y1,x2,y2)=>{ const dx=Math.max(40,Math.abs(x2-x1)*.5); return 'M'+x1+','+y1+' C'+(x1+dx)+','+y1+' '+(x2-dx)+','+y2+' '+x2+','+y2; };
+    const graphWires=s.wirings.filter(w=>this.EVENTS.some(e=>e.id===w.event)&&this.ACTIONS.some(a=>a.id===w.action)).map(w=>{
+      const ep=evNode(w.event), ap=acNode(w.action);
+      const x1=ep.x+NODE_W, y1=ep.y+NODE_H/2, x2=ap.x, y2=ap.y+NODE_H/2;
+      const mx=(x1+x2)/2, my=(y1+y2)/2, col=acColor[w.action]||'#5a7bff';
+      return {d:bez(x1,y1,x2,y2),color:col,width:2.5,opacity:.85,onRemove:()=>this.removeWiring(w.id),
+        badgeStyle:{position:'absolute',left:mx-11,top:my-11,width:22,height:22,borderRadius:'50%',background:'#fff',border:'1px solid var(--border)',color:'var(--gray)',cursor:'pointer',zIndex:4,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 2px 6px -2px rgba(0,53,128,.3)',padding:0}};
+    });
+    let linkPath='';
+    if(linkFrom && this._linkEnd){ const ep=evNode(linkFrom); linkPath=bez(ep.x+NODE_W,ep.y+NODE_H/2,this._linkEnd.x,this._linkEnd.y); }
+
+    // events palette
+    const eventsVM=this.EVENTS.map(e=>{ const active=s.selectedEvent===e.id; const n=s.wirings.filter(w=>w.event===e.id).length;
+      return {label:e.label,count:n?String(n):'', onClick:()=>this.selectEvent(e.id),
+        style:{display:'flex',alignItems:'center',gap:10,width:'100%',padding:'12px 14px',border:'1px solid '+(active?'var(--primary)':'var(--border)'),borderRadius:12,cursor:'pointer',fontFamily:'inherit',textAlign:'left',
+          background:active?'var(--light-blue)':'#fff',boxShadow:active?'0 4px 14px -6px rgba(90,123,255,.6)':'none',transition:'all .15s'},
+        dotStyle:{width:9,height:9,borderRadius:99,background:active?'var(--primary)':'#cdd8ec',flexShrink:0},
+        labelStyle:{flex:1,fontWeight:active?700:600,fontSize:14,color:active?'#2563eb':'var(--foreground)'},
+        countStyle:{fontSize:11,fontWeight:700,color:'var(--gray)',background:'var(--muted)',borderRadius:99,padding:'2px 8px',display:n?'block':'none'}};
+    });
+
+    // actions palette for the selected event
+    const allowed=this.COMPAT[s.selectedEvent]||[];
+    const actionsVM=this.ACTIONS.map(a=>{ const ok=allowed.includes(a.id);
+      return {label:a.label,desc:ok?a.desc:'Not valid for '+evLabel(s.selectedEvent),ok,blocked:!ok,
+        onClick:ok?()=>this.addWiring(a.id):null,
+        icon:mk(ok?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>'),
+        style:{display:'flex',alignItems:'center',gap:11,width:'100%',padding:'12px 14px',borderRadius:12,textAlign:'left',fontFamily:'inherit',
+          border:'1px solid '+(ok?'var(--border)':'#eef0f4'),background:ok?'#fff':'#f7f8fa',cursor:ok?'pointer':'not-allowed',opacity:ok?1:.55,transition:'all .15s'},
+        iconWrap:{width:32,height:32,borderRadius:9,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',color:ok?(acColor[a.id]||'#5a7bff'):'#aab3c6',background:ok?'#f2f6ff':'#eef0f4'},
+        titleStyle:{fontWeight:700,fontSize:13.5,color:ok?'var(--foreground)':'#aab3c6'}};
+    });
+
+    // wirings list (graph)
+    const wiringsVM=s.wirings.map(w=>{ const col=acColor[w.action]||'#5a7bff';
+      let cfg=''; let hasCfg=false;
+      if(w.action==='Notify'){ cfg='"'+(w.template||'').slice(0,52)+((w.template||'').length>52?'…':'')+'"'; hasCfg=true; }
+      if(w.action==='ScheduleReminder'){ cfg='Every '+w.baseInterval+'h · auto-escalates'; hasCfg=true; }
+      return {id:w.id,eventLabel:evLabel(w.event),actionLabel:acLabel(w.action),cfg,hasCfg,
+        onConfig:hasCfg?()=>this.openWiringConfig(w.id):null,
+        onRemove:()=>this.removeWiring(w.id),
+        cardStyle:{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',background:'#fff',border:'1px solid var(--card-border)',borderRadius:14,boxShadow:'var(--shadow-card)'},
+        eventPill:{display:'inline-flex',alignItems:'center',gap:7,padding:'6px 12px',borderRadius:10,background:'var(--light-blue)',color:'#2563eb',fontWeight:700,fontSize:13,whiteSpace:'nowrap'},
+        actionPill:{display:'inline-flex',alignItems:'center',gap:7,padding:'6px 12px',borderRadius:10,background:col,color:'#fff',fontWeight:700,fontSize:13,whiteSpace:'nowrap'},
+        configBtnShow:hasCfg};
+    });
+
+    // config modal
+    const ew=s.editWiring;
+    let cfgVals={};
+    if(ew){
+      if(ew.action==='Notify'){
+        const fields=this.PAYLOADS[ew.event]||[];
+        const preview=(ew.template||'').replace(/\{\{(\w+)\}\}/g,(m,k)=>this.SAMPLE[k]!=null?this.SAMPLE[k]:m);
+        cfgVals={cfgIsNotify:true,cfgIsReminder:false,
+          cfgEvent:evLabel(ew.event),cfgTemplate:ew.template||'',
+          cfgFields:fields.map(f=>({name:f,onClick:()=>this.insertTplField(f),
+            style:{padding:'6px 11px',borderRadius:9,border:'1px solid var(--primary)',background:'#f2f6ff',color:'var(--primary)',fontWeight:700,fontSize:12.5,cursor:'pointer',fontFamily:'ui-monospace,monospace'}})),
+          cfgPreview:preview,
+          onTemplateChange:e=>this.setEditField('template',e.target.value),
+          cfgChannel:ew.channel||'in-app',
+          cfgChannels:[['in-app','In-app','M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0'],['email','Email','__mail'],['sms','SMS','__sms']].map(c=>{
+            const sel=(ew.channel||'in-app')===c[0];
+            return {id:c[0],label:c[1],isMail:c[2]==='__mail',isSms:c[2]==='__sms',isBell:c[2].indexOf('M6 8')===0,onClick:()=>this.setEditField('channel',c[0]),
+              style:{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:6,padding:'12px 8px',borderRadius:12,border:'1.5px solid '+(sel?'var(--primary)':'var(--border)'),background:sel?'var(--light-blue)':'#fff',cursor:'pointer',fontFamily:'inherit',color:sel?'#2563eb':'var(--gray)',fontWeight:700,fontSize:13},
+              iconColor:sel?'var(--primary)':'#aab3c6'};
+          }),
+        };
+      } else if(ew.action==='ScheduleReminder'){
+        const st=this.escSteps(ew.baseInterval);
+        cfgVals={cfgIsNotify:false,cfgIsReminder:true,
+          cfgBase:ew.baseInterval,
+          onBaseChange:e=>this.setEditField('baseInterval',Number(e.target.value)),
+          escBase:st.base+'h',escHalf:st.half+'h',escQuarter:st.quarter+'h'};
+      }
+    }
+
+    // schedulments
+    const recLabel={daily:'Daily',weekly:'Weekly',monthly:'Monthly'};
+    const recAnchor={daily:'Resets at midnight',weekly:'Every Monday',monthly:'On the 1st'};
+    const schedulmentsVM=s.schedulments.map(x=>({mission:x.mission,recLabel:recLabel[x.recurrence],anchor:recAnchor[x.recurrence],
+      audienceText:x.audience==='all'?'All employees':x.employees.length+' employees',
+      audienceAll:x.audience==='all', next:x.next, onRemove:()=>this.removeSchedul(x.id)}));
+
+    // catalog
+    const catMissions=s.missions.map(m=>({name:m.name,description:m.description,
+      durationText:m.durationDays?m.durationDays+(m.durationDays===1?' day':' days'):'—',
+      hasDuration:!!m.durationDays, xp:m.xp, statusLabel:m.status,
+      onEdit:()=>this.openEditItem('mission',m), onDelete:()=>this.removeItem('mission',m.id)}));
+    const tierMap={bronze:'Bronze',silver:'Silver',gold:'Gold',diamond:'Diamond'};
+    const tierColor={bronze:'var(--trophy-bronze-fg)',silver:'var(--trophy-silver-fg)',gold:'var(--trophy-gold-fg)',diamond:'var(--trophy-diamond-fg)'};
+    const catBadges=s.badges.map(b=>({name:b.name,tierLabel:tierMap[b.tier],threshold:b.threshold,iconSrc:'assets/trophies/'+b.tier+'.svg',
+      tierStyle:{color:tierColor[b.tier],fontWeight:700},
+      onEdit:()=>this.openEditItem('badge',b), onDelete:()=>this.removeItem('badge',b.id)}));
+
+    // edit item modal
+    const ei=s.editItem;
+    let itemVals={};
+    if(ei){ itemVals={itemIsMission:ei._kind==='mission',itemIsBadge:ei._kind==='badge',
+      itemTitle:(ei._new?'New ':'Edit ')+(ei._kind==='mission'?'mission':'badge'),
+      itemName:ei.name,itemDesc:ei.description||'',itemDuration:ei.durationDays||'',itemXp:ei.xp||0,
+      itemTier:ei.tier||'bronze',itemThreshold:ei.threshold||1,
+      onName:e=>this.setItemField('name',e.target.value),
+      onDesc:e=>this.setItemField('description',e.target.value),
+      onDuration:e=>this.setItemField('durationDays',e.target.value),
+      onXp:e=>this.setItemField('xp',e.target.value),
+      onThreshold:e=>this.setItemField('threshold',e.target.value),
+      tierOptions:['bronze','silver','gold','diamond'].map(t=>({label:tierMap[t],sel:ei.tier===t,onClick:()=>this.setItemField('tier',t),
+        style:{padding:'8px 14px',borderRadius:10,border:'1px solid '+(ei.tier===t?tierColor[t]:'var(--border)'),background:ei.tier===t?'#f7f4ff':'#fff',color:ei.tier===t?tierColor[t]:'var(--gray)',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit'}})),
+    }; }
+
+    // new schedulment modal
+    const ns=s.newSchedul;
+    let nsVals={};
+    if(ns){ nsVals={
+      nsMission:ns.mission, onNsMission:e=>this.setSchedul('mission',e.target.value),
+      recOptions:['daily','weekly','monthly'].map(r=>({label:recLabel[r],anchor:recAnchor[r],sel:ns.recurrence===r,onClick:()=>this.setSchedul('recurrence',r),
+        style:{flex:1,padding:'12px',borderRadius:12,border:'1px solid '+(ns.recurrence===r?'var(--primary)':'var(--border)'),background:ns.recurrence===r?'var(--light-blue)':'#fff',cursor:'pointer',fontFamily:'inherit',textAlign:'center'},
+        labelStyle:{fontWeight:700,fontSize:14,color:ns.recurrence===r?'#2563eb':'var(--foreground)'},
+        anchorStyle:{fontSize:11.5,color:'var(--gray)',marginTop:3}})),
+      audAll:ns.audience==='all', audList:ns.audience==='list',
+      onAudAll:()=>this.setSchedul('audience','all'), onAudList:()=>this.setSchedul('audience','list'),
+      audAllStyle:{flex:1,padding:'12px',borderRadius:12,border:'1px solid '+(ns.audience==='all'?'var(--primary)':'var(--border)'),background:ns.audience==='all'?'var(--light-blue)':'#fff',cursor:'pointer',fontFamily:'inherit',fontWeight:700,fontSize:14,color:ns.audience==='all'?'#2563eb':'var(--foreground)'},
+      audListStyle:{flex:1,padding:'12px',borderRadius:12,border:'1px solid '+(ns.audience==='list'?'var(--primary)':'var(--border)'),background:ns.audience==='list'?'var(--light-blue)':'#fff',cursor:'pointer',fontFamily:'inherit',fontWeight:700,fontSize:14,color:ns.audience==='list'?'#2563eb':'var(--foreground)'},
+      empList:this.EMPLOYEES.map(name=>{ const on=ns.employees.includes(name);
+        return {name,checked:on,onClick:()=>this.toggleSchedEmp(name),
+          style:{display:'flex',alignItems:'center',gap:10,padding:'9px 12px',borderRadius:10,border:'1px solid '+(on?'var(--primary)':'var(--border)'),background:on?'#f2f6ff':'#fff',cursor:'pointer'},
+          boxStyle:{width:18,height:18,borderRadius:6,border:'1.5px solid '+(on?'var(--primary)':'#cdd8ec'),background:on?'var(--primary)':'#fff',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}; }),
+      nsCanSave:!!ns.mission,
+    }; }
+
+    // delivery stats
+    const channels=[
+      {ch:'In-app',icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',delivered:2841,failed:12,color:'#5a7bff',bg:'#e9edff'},
+      {ch:'Email',icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>',delivered:1620,failed:83,color:'#a855f7',bg:'#f4e8ff'},
+      {ch:'SMS',icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',delivered:544,failed:31,color:'#ff964f',bg:'#fff0e6'},
+    ];
+    const statsVM=channels.map(c=>{ const total=c.delivered+c.failed; const rate=(c.delivered/total*100);
+      return {ch:c.ch,icon:mk(c.icon),delivered:c.delivered.toLocaleString('en-US'),failed:c.failed.toLocaleString('en-US'),
+        rate:rate.toFixed(1)+'%',
+        iconWrap:{width:40,height:40,borderRadius:11,display:'flex',alignItems:'center',justifyContent:'center',color:c.color,background:c.bg},
+        barDelivered:{width:rate+'%',height:'100%',background:c.color,borderRadius:99,transition:'width .5s'},
+        barWrap:{height:8,borderRadius:99,background:'var(--light-pink)',overflow:'hidden',marginTop:14}}; });
+    const totalDel=channels.reduce((a,c)=>a+c.delivered,0), totalFail=channels.reduce((a,c)=>a+c.failed,0);
+
+    // engine feed
+    const engIcon=ev=>{ const [fg,bg,svg]=this.evIcon(ev==='expire'?'reminder':ev); return [fg,bg,svg]; };
+    const engColor={MissionAssigned:'#5a7bff',MissionCompleted:'#22c55e',MissionExpired:'#f96767',BadgeUnlocked:'#a855f7',LevelUp:'#5a7bff',ReminderDue:'#ff964f'};
+    const engineVM=s.engineActivity.map(g=>{ const [fg,bg,svg]=this.evIcon(g.ev==='expire'?'reminder':g.ev);
+      return {who:g.who,text:g.text,time:g.time,type:g.type,icon:mk(svg),
+        iconWrap:{width:34,height:34,borderRadius:10,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',color:fg,background:bg},
+        typeStyle:{fontSize:11,fontWeight:700,padding:'2px 9px',borderRadius:7,color:engColor[g.type]||'#7a86a1',background:'color-mix(in srgb,'+(engColor[g.type]||'#7a86a1')+' 12%,transparent)',whiteSpace:'nowrap'},
+        initials:g.who.split(' ').map(w=>w[0]).join('').slice(0,2)}; });
+
+    return {
+      // rule graph
+      eventsVM, actionsVM, wiringsVM,
+      graphEvents, graphActions, graphWires,
+      setCanvasRef:(el)=>this.setCanvasRef(el),
+      graphLinking:!!(linkFrom && this._linkEnd), linkPath,
+      selectedEventLabel:evLabel(s.selectedEvent),
+      noWirings:s.wirings.length===0,
+      // config modal
+      showWiringConfig:!!ew, closeWiringConfig:()=>this.closeWiringConfig(), saveWiringConfig:()=>this.saveWiringConfig(),
+      ...cfgVals,
+      // schedulments
+      schedulmentsVM, openNewSchedul:()=>this.openNewSchedul(),
+      showNewSchedul:!!ns, closeSchedul:()=>this.closeSchedul(), saveSchedul:()=>this.saveSchedul(), ...nsVals,
+      // catalog
+      catalogTab:s.catalogTab, catIsMissions:s.catalogTab==='missions', catIsBadges:s.catalogTab==='badges',
+      tabMissionsStyle:this.filterPill(s.catalogTab==='missions'), tabBadgesStyle:this.filterPill(s.catalogTab==='badges'),
+      setTabMissions:()=>this.setCatalogTab('missions'), setTabBadges:()=>this.setCatalogTab('badges'),
+      catMissions, catBadges,
+      newMission:()=>this.openEditItem('mission',null), newBadge:()=>this.openEditItem('badge',null),
+      showEditItem:!!ei, closeEditItem:()=>this.closeEditItem(), saveItem:()=>this.saveItem(), ...itemVals,
+      // stats
+      statsVM, totalDelivered:totalDel.toLocaleString('en-US'), totalFailed:totalFail.toLocaleString('en-US'),
+      overallRate:(totalDel/(totalDel+totalFail)*100).toFixed(1)+'%',
+      // engine
+      engineVM, engineRecent:engineVM.slice(0,5), goEngine:()=>this.go('a-engine'),
+    };
+  }
+
+  loginRolePill(active){ return {flex:1,padding:'13px',borderRadius:13,border:'2px solid '+(active?'var(--primary)':'var(--border)'),background:active?'var(--light-blue)':'#fff',cursor:'pointer',fontFamily:'inherit',textAlign:'left',transition:'all .15s'}; }
+
+  profileVals(){
+    const s=this.state, isEmp=s.role==='employee', emp=s.emp, mk=this.mk;
+    const money=n=>n.toLocaleString('en-US');
+    const dx=this._pdrag?this._pdrag.dx:0;
+    const drawerStyle={position:'fixed',top:0,right:0,bottom:0,width:340,background:'#fff',zIndex:101,boxShadow:'0 0 60px -12px rgba(0,53,128,.32)',display:'flex',flexDirection:'column',
+      transform:'translateX('+(s.profileOpen?-dx:360)+'px)',transition:this._pdrag?'none':'transform .32s cubic-bezier(.2,.8,.2,1)'};
+    let rows;
+    if(isEmp){
+      rows=[
+        {k:'Level',v:'Level '+emp.level+' · '+emp.rankTitle},
+        {k:'Total XP',v:money(emp.totalXp)+' XP'},
+        {k:'Missions completed',v:String(emp.completedCount)},
+        {k:'Badges earned',v:emp.badgeCount+' of '+s.badges.length},
+        {k:'Department',v:'People & Culture'},
+        {k:'Email',v:'fatima.arif@ocp.ma'},
+      ];
+    } else {
+      rows=[
+        {k:'Role',v:'HR Administrator'},
+        {k:'Access',v:'Engine configuration'},
+        {k:'Permissions',v:'Wire events · Schedulments · Catalog'},
+        {k:'Team',v:'People Operations'},
+        {k:'Email',v:'nadia.benali@ocp.ma'},
+        {k:'Member since',v:'Jan 2024'},
+      ];
+    }
+    return {
+      profileName:isEmp?emp.name:'Nadia Benali',
+      profileRole:isEmp?'Employee':'HR Administrator',
+      profileInitials:isEmp?emp.initials:'NB',
+      profileIsEmp:isEmp,
+      profileLevel:isEmp?emp.level:null,
+      profileXpPct:isEmp?Math.min(100,Math.round(emp.xpInto/emp.xpNeed*100)):0,
+      profileXpText:isEmp?money(emp.xpInto)+' / '+money(emp.xpNeed)+' XP to Level '+(emp.level+1):'',
+      profileRows:rows.map(r=>({k:r.k,v:r.v})),
+      profileDrawerStyle:drawerStyle,
+    };
+  }
+
+  renderVals(){
+    const s=this.state, emp=s.emp, isEmp=s.role==='employee';
+    const money=n=>n.toLocaleString('en-US');
+    const mk=this.mk;
+
+    // ---- nav ----
+    const icons={
+      dash:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
+      missions:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+      badges:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="m9 13.5-1.5 8 4.5-3 4.5 3L15 13.5"/></svg>',
+      rules:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="7" height="6" rx="1.5"/><rect x="15" y="14" width="7" height="6" rx="1.5"/><path d="M9 7h4a2 2 0 0 1 2 2v8"/></svg>',
+      sched:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/><path d="m9 15 2 2 4-4"/></svg>',
+      catalog:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4zM4 12h10v8H4zM18 12h2v8h-2z"/></svg>',
+      stats:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="7"/><rect x="13" y="7" width="3" height="11"/></svg>',
+      engine:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="18" cy="18" r="2.5"/></svg>',
+    };
+    const unread=s.notifications.filter(n=>!n.read).length;
+    let navItems;
+    if(isEmp){
+      navItems=[
+        {id:'e-dashboard',label:'Dashboard',ic:'dash'},
+        {id:'e-missions',label:'Missions',ic:'missions',badge:s.missions.filter(m=>m.status==='assigned').length},
+        {id:'e-badges',label:'Badge case',ic:'badges'},
+      ];
+    } else {
+      navItems=[
+        {id:'a-dashboard',label:'Dashboard',ic:'dash'},
+        {id:'a-rules',label:'Rule graph',ic:'rules'},
+        {id:'a-schedul',label:'Schedulments',ic:'sched'},
+        {id:'a-catalog',label:'Missions & Badges',ic:'catalog'},
+        {id:'a-engine',label:'Engine activity',ic:'engine'},
+      ];
+    }
+    const collapsed=s.navWidth<150;
+    const navVM=navItems.map(n=>({label:n.label,badge:n.badge&&String(n.badge),showBadge:!!n.badge && !collapsed,
+      badgeStyle:{background:'var(--primary)',color:'#fff',fontSize:11,fontWeight:700,minWidth:20,height:20,padding:'0 6px',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center'},
+      icon:mk(icons[n.ic]),style:this.navBtn(s.screen===n.id,collapsed),onClick:()=>this.go(n.id)}));
+
+    // ---- notifications VM ----
+    const notificationsVM=s.notifications.map(n=>{
+      const rem=n.kind==='reminder';
+      const [fg,bg,svg]=this.evIcon(rem?'reminder':(n.ev||'system'));
+      return {title:n.title,body:n.body,time:n.time,unread:!n.read,isReminder:rem,
+        icon:mk(svg),
+        iconWrapStyle:{width:34,height:34,borderRadius:10,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',color:fg,background:bg},
+        rowStyle:{display:'flex',gap:12,padding:'14px 18px',borderBottom:'1px solid #f1f4fa',background:!n.read?(rem?'#fff8f4':'#f8fbff'):'#fff',borderLeft:rem?'3px solid var(--orange)':'3px solid transparent'}};
+    });
+
+    // ---- missions VM ----
+    const deadlineText=(m)=>{ if(!m.durationDays) return ''; if(m.urgentHrs) return 'Due in '+m.urgentHrs+'h'; return 'Due in '+m.durationDays+(m.durationDays===1?' day':' days'); };
+    const mkMissionVM=(m)=>{
+      const urgent=!!m.urgentHrs;
+      const statusMap={assigned:['Assigned','#2563eb','var(--light-blue)'],completed:['Completed','var(--success)','var(--light-green)'],expired:['Expired','var(--destructive)','var(--light-pink)']};
+      const [lbl,c,bgc]=statusMap[m.status];
+      return {name:m.name,description:m.description,xp:m.xp,
+        statusLabel:lbl,
+        statusChipStyle:{fontSize:12,fontWeight:700,padding:'3px 11px',borderRadius:99,color:c,background:bgc},
+        showDeadline:!!m.durationDays,noDeadline:!m.durationDays,
+        deadlineText:deadlineText(m),
+        deadlineChipStyle:{fontSize:12,fontWeight:700,padding:'3px 11px',borderRadius:99,display:'inline-flex',alignItems:'center',
+          color:urgent?'var(--red)':'var(--orange)',background:urgent?'var(--light-pink)':'#fff2e6'},
+        canComplete:m.status==='assigned',isDone:m.status==='completed',isExpired:m.status==='expired',
+        onComplete:()=>this.completeMission(m.id),
+        cardStyle:{display:'flex',gap:20,alignItems:'center',padding:'20px 22px',background:'#fff',border:'1px solid var(--card-border)',borderRadius:16,boxShadow:'var(--shadow-card)',
+          opacity:m.status==='expired'?.68:1}};
+    };
+    let filtered=s.missions;
+    if(s.missionFilter==='assigned') filtered=s.missions.filter(m=>m.status==='assigned');
+    else if(s.missionFilter==='completed') filtered=s.missions.filter(m=>m.status==='completed');
+    else if(s.missionFilter==='expired') filtered=s.missions.filter(m=>m.status==='expired');
+    const missionsVM=filtered.map(mkMissionVM);
+
+    // active missions (dashboard)
+    const active=s.missions.filter(m=>m.status==='assigned');
+    const activeMissionsVM=active.map(m=>{
+      const urgent=!!m.urgentHrs;
+      return {name:m.name,metaText:'+'+m.xp+' XP'+(m.durationDays?'':' · No deadline'),
+        onComplete:()=>this.completeMission(m.id),
+        dotStyle:{width:10,height:10,borderRadius:99,flexShrink:0,background:urgent?'var(--red)':'var(--primary)',boxShadow:urgent?'0 0 0 4px var(--light-pink)':'0 0 0 4px var(--light-blue)'},
+        deadlineChipStyle:m.durationDays?{fontSize:11.5,fontWeight:700,padding:'3px 9px',borderRadius:99,whiteSpace:'nowrap',color:urgent?'var(--red)':'var(--orange)',background:urgent?'var(--light-pink)':'#fff2e6'}:{display:'none'},
+        deadlineText:deadlineText(m),
+        completeBtnStyle:{height:34,padding:'0 15px',borderRadius:10,border:'1px solid var(--primary)',background:'#fff',color:'var(--primary)',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}};
+    });
+
+    // ---- activity VM ----
+    const activityVM=s.activity.map(a=>{ const [fg,bg,svg]=this.evIcon(a.ev);
+      return {text:a.text,time:a.time,icon:mk(svg),
+        iconStyle:{width:28,height:28,borderRadius:9,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',color:fg,background:bg}}; });
+
+    // ---- badges VM ----
+    const tierMap={bronze:['Bronze','var(--trophy-bronze-fg)','var(--trophy-bronze-bg)'],silver:['Silver','var(--trophy-silver-fg)','var(--trophy-silver-bg)'],gold:['Gold','var(--trophy-gold-fg)','var(--trophy-gold-bg)'],diamond:['Diamond','var(--trophy-diamond-fg)','var(--trophy-diamond-bg)']};
+    const cc=emp.completedCount;
+    const badgesVM=s.badges.map(b=>{ const unlocked=cc>=b.threshold; const [tl,tf,tb]=tierMap[b.tier];
+      return {name:b.name,unlocked,locked:!unlocked,iconSrc:'assets/trophies/'+b.tier+'.svg',
+        iconStyle:{width:72,height:72,filter:unlocked?'drop-shadow(0 6px 10px rgba(0,0,0,.14))':'grayscale(1) opacity(.4)',transition:'all .3s'},
+        glowStyle:{position:'absolute',inset:6,borderRadius:'50%',background:tb,filter:'blur(6px)',opacity:.9},
+        titleColor:unlocked?'var(--foreground)':'#aab3c6',
+        tierLabel:tl,
+        tierChipStyle:{display:'inline-block',marginTop:6,fontSize:11,fontWeight:800,letterSpacing:'.05em',padding:'3px 10px',borderRadius:99,color:unlocked?tf:'#aab3c6',background:unlocked?tb:'#f2f2f2'},
+        reqText:unlocked?'Unlocked · '+b.threshold+' missions':'Locked · '+b.threshold+' missions',
+        cardStyle:{background:'#fff',border:'1px solid var(--card-border)',borderRadius:18,padding:'22px 16px 20px',boxShadow:'var(--shadow-card)',opacity:unlocked?1:.92,transition:'all .3s'}};
+    });
+    const nextLocked=s.badges.find(b=>cc<b.threshold);
+    const prevThresh=[...s.badges].reverse().find(b=>cc>=b.threshold);
+    let nextBadgePct=100, nextBadgeText='All badges earned!';
+    if(nextLocked){ const base=prevThresh?prevThresh.threshold:0;
+      nextBadgePct=Math.round((cc-base)/(nextLocked.threshold-base)*100);
+      nextBadgeText=(nextLocked.threshold-cc)+' more mission'+((nextLocked.threshold-cc)===1?'':'s')+' \u2192 '+nextLocked.name; }
+
+    // ---- overlays ----
+    const ov=s.overlays[0]||null;
+    const showLevelUp=ov&&ov.type==='levelup';
+    const showBadge=ov&&ov.type==='badge';
+    let badgeVals={};
+    if(showBadge){ const [tl,tf,tb]=tierMap[ov.tier];
+      badgeVals={badgeIconSrc:'assets/trophies/'+ov.tier+'.svg',badgeUnlockName:ov.name,badgeTierLabel:tl,badgeTierColor:tf,badgeHeroBg:tb,badgeGlow:tf,
+        badgeTierChip:{display:'inline-block',marginTop:8,fontSize:12,fontWeight:800,padding:'4px 14px',borderRadius:99,color:tf,background:tb},
+        badgeUnlockBody:'You\u2019ve completed '+cc+' missions. This badge is now in your case.'};
+    }
+    // confetti for level up
+    let confetti=null;
+    if(showLevelUp){ const cols=['#fff','#e8ecff','#ffe08a','#b6f5c8','#ffd0e0'];
+      confetti=React.createElement(React.Fragment,null,Array.from({length:18}).map((_,i)=>React.createElement('span',{key:i,style:{position:'absolute',top:-14,left:(6+i*5.2)+'%',width:8,height:12,background:cols[i%cols.length],borderRadius:2,opacity:0,animation:'eden-confetti '+(1.6+ (i%5)*0.35)+'s ease-in '+(i%6)*0.12+'s infinite'}}))); }
+
+    return {
+      // header / role
+      isEmployee:isEmp,
+      setEmployee:()=>this.setRole('employee'), setAdmin:()=>this.setRole('admin'),
+      roleEmpStyle:this.rolePill(isEmp), roleAdminStyle:this.rolePill(!isEmp),
+      headerName:isEmp?emp.name:'Nadia Benali', headerRole:isEmp?'Employee':'HR Administrator',
+      headerInitials:isEmp?emp.initials:'NB',
+      // bell
+      bellOpen:s.bellOpen, toggleBell:()=>this.toggleBell(), markAllRead:()=>this.markAllRead(),
+      hasUnread:unread>0, unreadCount:unread>9?'9+':String(unread),
+      bellBadgeStyle:{position:'absolute',top:-4,right:-4,minWidth:18,height:18,padding:'0 5px',borderRadius:99,background:'var(--red)',color:'#fff',fontSize:11,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #fff'},
+      notificationsVM, noNotifications:s.notifications.length===0,
+      // nav
+      navItems:navVM,
+      navStyle:{width:s.navWidth,flexShrink:0,background:'#fff',borderRight:'1px solid var(--border)',padding:collapsed?'18px 10px':'18px 14px',display:'flex',flexDirection:'column',gap:4,overflowY:'auto',overflowX:'hidden',transition:this._resizing?'none':'width .15s ease'},
+      showNavLabels:!collapsed,
+      navGroupLabelText:collapsed?'•••':(isEmp?'MY WORKSPACE':'CONFIGURATION'),
+      navGroupLabelStyle:{fontSize:11,fontWeight:800,letterSpacing:'.09em',color:'#aab3c6',padding:collapsed?'6px 0 10px':'6px 12px 10px',textAlign:collapsed?'center':'left'},
+      signOutStyle:{margin:collapsed?'10px 0 0':'10px 6px 0',display:'flex',alignItems:'center',gap:10,justifyContent:collapsed?'center':'flex-start',width:collapsed?'100%':'calc(100% - 12px)',padding:collapsed?'11px 0':'10px 12px',border:'1px solid var(--border)',borderRadius:11,background:'#fff',color:'var(--gray)',cursor:'pointer',fontFamily:'inherit',fontSize:13.5,fontWeight:600},
+      startResize:(e)=>this.startResize(e), toggleNav:()=>this.toggleNav(),
+      // profile drawer
+      openProfile:()=>this.openProfile(), closeProfile:()=>this.closeProfile(),
+      profileOpen:s.profileOpen,
+      profileDrag:this._pdrag?this._pdrag.dx:0,
+      startProfileDrag:(e)=>this.startProfileDrag(e),
+      ...this.profileVals(),
+      navGroupLabel:isEmp?'MY WORKSPACE':'CONFIGURATION',
+      sideFootTitle:isEmp?'Keep your streak alive':'Guardrails on',
+      sideFootBody:isEmp?'Complete a mission today to keep earning XP toward Level '+(emp.level+1)+'.':'You can only wire pre-approved events and actions. Invalid combinations are blocked automatically.',
+      // screen flags
+      showEDashboard:s.screen==='e-dashboard',
+      showEMissions:s.screen==='e-missions',
+      showEBadges:s.screen==='e-badges',
+      showRules:s.screen==='a-rules',
+      showAdminDash:s.screen==='a-dashboard',
+      showSchedul:s.screen==='a-schedul',
+      showCatalog:s.screen==='a-catalog',
+      showStats:s.screen==='a-stats',
+      showEngine:s.screen==='a-engine',
+      // auth
+      authed:s.authed, notAuthed:!s.authed, notAuthed:!s.authed,
+      loginIsEmp:s.loginRole==='employee', loginIsAdmin:s.loginRole==='admin',
+      loginEmpStyle:this.loginRolePill(s.loginRole==='employee'), loginAdminStyle:this.loginRolePill(s.loginRole==='admin'),
+      loginEmail:s.loginRole==='employee'?'fatima.arif@ocp.ma':'nadia.benali@ocp.ma',
+      setLoginEmp:()=>this.setLoginRole('employee'), setLoginAdmin:()=>this.setLoginRole('admin'),
+      doSignIn:()=>this.signIn(), doSignOut:()=>this.signOut(),
+      ...this.adminVals(),
+      // dashboard emp
+      emp:{first:emp.first,level:emp.level,rankTitle:emp.rankTitle,
+        xpText:money(emp.xpInto)+' / '+money(emp.xpNeed)+' XP to Level '+(emp.level+1),
+        xpPct:Math.min(100,Math.round(emp.xpInto/emp.xpNeed*100)),
+        totalXpText:money(emp.totalXp),completedCount:emp.completedCount,badgeCount:emp.badgeCount},
+      activeMissionsVM, noActive:active.length===0, goMissions:()=>this.go('e-missions'),
+      activityVM,
+      // missions screen
+      missionsVM,
+      filterAll:()=>this.setState({missionFilter:'all'}), filterAssigned:()=>this.setState({missionFilter:'assigned'}),
+      filterCompleted:()=>this.setState({missionFilter:'completed'}), filterExpired:()=>this.setState({missionFilter:'expired'}),
+      filStyleAll:this.filterPill(s.missionFilter==='all'),
+      filStyleAssigned:this.filterPill(s.missionFilter==='assigned'),
+      filStyleCompleted:this.filterPill(s.missionFilter==='completed'),
+      filStyleExpired:this.filterPill(s.missionFilter==='expired'),
+      // badges screen
+      badgesVM, badgeProgressText:emp.badgeCount+' of '+s.badges.length+' unlocked.',
+      nextBadgePct, nextBadgeText, nextBadgeText2:nextBadgeText,
+      // toasts
+      toasts:s.toasts.map(t=>{ const [fg,bg,svg]=this.evIcon(t.ev);
+        return {style:{display:'flex',gap:12,width:340,padding:'13px 15px',background:'#fff',border:'1px solid var(--card-border)',borderRadius:14,boxShadow:'0 14px 36px -10px rgba(0,53,128,.3)',animation:'eden-toast-in .35s cubic-bezier(.2,.9,.3,1.3)',pointerEvents:'auto'},
+          iconWrap:{width:34,height:34,borderRadius:10,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',color:fg,background:bg},
+          icon:mk(svg),title:t.title,body:t.body}; }),
+      // overlays
+      showLevelUp, dismissOverlay:()=>this.dismissOverlay(),
+      levelUpLevel:ov&&ov.level, levelUpTitle:ov&&('You\u2019re now '+(ov.title||'')), levelUpBody:'Higher level, tougher quests, bigger rewards. Keep going.',
+      confetti,
+      showBadgeUnlock:showBadge, ...badgeVals,
+      // reminder
+      showReminder:!!s.reminder,
+      reminderMission:s.reminder&&s.reminder.mission,
+      reminderCountdown:s.reminder&&s.reminder.countdown,
+      reminderEscalation:s.reminder&&s.reminder.escalation,
+      snoozeReminder:()=>this.snoozeReminder(), completeFromReminder:()=>this.completeFromReminder(),
+    };
+  }
+
+  filterPill(active){ return {padding:'7px 16px',borderRadius:10,border:'1px solid '+(active?'var(--primary)':'var(--border)'),background:active?'var(--primary)':'#fff',color:active?'#fff':'var(--foreground)',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',transition:'all .15s'}; }
+}
+</script>
+</body>
+</html>

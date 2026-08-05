@@ -35,7 +35,12 @@ describe('OutboxProcessor (integration)', () => {
     });
     await dataSource.initialize();
 
-    outboxRepository = new OutboxRepository(dataSource.getRepository(OutboxEntity), dataSource);
+    const fakeRedisClient = { publish: jest.fn().mockResolvedValue(1) };
+    outboxRepository = new OutboxRepository(
+      dataSource.getRepository(OutboxEntity),
+      dataSource,
+      fakeRedisClient as any,
+    );
   });
 
   afterEach(async () => {
@@ -74,13 +79,34 @@ describe('OutboxProcessor (integration)', () => {
     return saved;
   }
 
+  // Fakes the pipeline-based interface publishBatch() actually drives
+  // (createPipeline()/queue()), not the single-event publish() — that one's
+  // only used by replayRecent() now. `exec` resolves to one [err, result]
+  // pair per queued event, in queue order, matching ioredis's real shape.
+  function fakePublisherResolving(): EventStreamPublisher {
+    const exec = jest.fn().mockResolvedValue([[null, 'stream-id-123']]);
+    return {
+      createPipeline: jest.fn().mockReturnValue({ xadd: jest.fn(), exec }),
+      queue: jest.fn(),
+      publish: jest.fn(),
+    } as unknown as EventStreamPublisher;
+  }
+
+  function fakePublisherRejecting(error: Error): EventStreamPublisher {
+    const exec = jest.fn().mockRejectedValue(error);
+    return {
+      createPipeline: jest.fn().mockReturnValue({ xadd: jest.fn(), exec }),
+      queue: jest.fn(),
+      publish: jest.fn(),
+    } as unknown as EventStreamPublisher;
+  }
+
   it('claims a real PENDING row, publishes it, and marks it PROCESSED in the database', async () => {
     const row = await insertPendingRow();
 
-    const fakePublisher = { publish: jest.fn().mockResolvedValue('stream-id-123') };
-    const processor = new OutboxProcessor(outboxRepository, fakePublisher as unknown as EventStreamPublisher);
+    const processor = new OutboxProcessor(outboxRepository, fakePublisherResolving(), {} as any);
 
-    await processor.process();
+    await processor.drain();
 
     // Read it back fresh from MySQL — not from any in-memory object — to
     // prove the UPDATE actually landed in the real table.
@@ -93,10 +119,13 @@ describe('OutboxProcessor (integration)', () => {
     // Start at attempts=4 — this is its last chance before the 5-attempt cap.
     const row = await insertPendingRow({ attempts: OUTBOX_MAX_ATTEMPTS - 1 });
 
-    const fakePublisher = { publish: jest.fn().mockRejectedValue(new Error('Redis is down')) };
-    const processor = new OutboxProcessor(outboxRepository, fakePublisher as unknown as EventStreamPublisher);
+    const processor = new OutboxProcessor(
+      outboxRepository,
+      fakePublisherRejecting(new Error('Redis is down')),
+      {} as any,
+    );
 
-    await processor.process();
+    await processor.drain();
 
     const updated = await dataSource.getRepository(OutboxEntity).findOneByOrFail({ id: row.id });
     expect(updated.attempts).toBe(OUTBOX_MAX_ATTEMPTS);

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Action, ActionContext, ActionResult } from './action.interface';
 import { EmployeeUserEntity } from '../../users/entities/employee-user.entity';
+import { NotificationGateway } from '../../websocket/notification.gateway';
 
 @Injectable()
 export class CheckLevelThresholdAction implements Action {
@@ -13,6 +14,7 @@ export class CheckLevelThresholdAction implements Action {
   constructor(
     @InjectRepository(EmployeeUserEntity)
     private readonly employeeRepo: Repository<EmployeeUserEntity>,
+    private readonly notificationGateway: NotificationGateway,
   ) {}
 
   async execute(
@@ -41,6 +43,10 @@ export class CheckLevelThresholdAction implements Action {
     }
 
     await repo.update({ id: employeeId }, { level: computedLevel });
+
+    this.notificationGateway.emitToEmployee(employeeId, 'level:up', {
+      level: computedLevel,
+    });
 
     return {
       shouldEmit: true,

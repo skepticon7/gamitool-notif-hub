@@ -30,14 +30,14 @@ export class BadgeCatalogController {
   @Post()
   create(@Body() dto: CreateBadgeDto) {
     return this.commandBus.execute(
-      new CreateBadgeCommand(dto.name, dto.threshold, dto.description),
+      new CreateBadgeCommand(dto.name, dto.threshold, dto.tier, dto.description),
     );
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateBadgeDto) {
     return this.commandBus.execute(
-      new UpdateBadgeCommand(id, dto.name, dto.threshold, dto.description),
+      new UpdateBadgeCommand(id, dto.name, dto.threshold, dto.tier, dto.description),
     );
   }
 

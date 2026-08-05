@@ -7,7 +7,7 @@ import { ProcessedEventsEntity } from './entities/processed-events.entity';
 import { ScheduledReminderEntity } from './entities/scheduled-reminder.entity';
 import { RuleEngineConsumer } from './services/rule-engine.consumer';
 import { ReminderSweepService } from './services/reminder-sweep.service';
-import { RulesCache } from './services/rules-cache';
+import { RulesCacheModule } from './rules-cache.module';
 import { EventLinkGraphValidator } from './services/event-link-graph-validator.service';
 import { ActionRegistry, ACTION_PROVIDERS } from './actions/action-registry';
 import { EmitEventAction } from './actions/emit-event.action';
@@ -23,6 +23,7 @@ import { UsersModule } from '../users/users.module';
 import { BadgesModule } from '../badges/badges.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { NotifyAction } from '../notifications/actions/notify.action';
+import { WebsocketModule } from '../websocket/websocket.module';
 import { CreateEventLinkHandler } from './handlers/create-event-link.handler';
 import { UpdateEventLinkHandler } from './handlers/update-event-link.handler';
 import { DeleteEventLinkHandler } from './handlers/delete-event-link.handler';
@@ -48,11 +49,12 @@ const QueryHandlers = [GetEventLinksHandler, GetEventCatalogHandler];
     UsersModule,
     BadgesModule,
     NotificationsModule,
+    WebsocketModule,
+    RulesCacheModule,
   ],
   providers : [
     RuleEngineConsumer,
     ReminderSweepService,
-    RulesCache,
     ActionRegistry,
     EventLinkGraphValidator,
     EmitEventAction,
@@ -78,6 +80,6 @@ const QueryHandlers = [GetEventLinksHandler, GetEventCatalogHandler];
       inject: [EmitEventAction, GrantXPAction, CheckLevelThresholdAction, NotifyAction , ScheduleReminderAction, CancelReminderAction, GrantBadgeAction],
     },
   ],
-  exports : [TypeOrmModule, ActionRegistry, RulesCache]
+  exports : [TypeOrmModule, ActionRegistry, RulesCacheModule]
 })
 export class RuleEngineModule {}

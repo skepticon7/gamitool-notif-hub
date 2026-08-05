@@ -6,9 +6,11 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'diamond';
+
 // The badge catalog — same role as MissionEntity for missions. GrantBadgeAction
-// looks a badge up by id (via params.badgeId in its event_link wiring) instead
-// of having its name/threshold retyped into every wiring that grants it.
+// scans this whole catalog against an employee's completed-mission count
+// (no badgeId param) — see GrantBadgeAction for why.
 @Entity('badges')
 export class BadgeEntity {
   @PrimaryGeneratedColumn('uuid')
@@ -22,6 +24,13 @@ export class BadgeEntity {
 
   @Column()
   threshold: number;
+
+  // Purely a display/grouping concept (matches the GamiPanel design
+  // system's bronze/silver/gold/diamond tier colors) — GrantBadgeAction
+  // never reads this, it only compares `threshold` against the completed
+  // count.
+  @Column({ type: 'varchar' })
+  tier: BadgeTier;
 
   @CreateDateColumn()
   createdAt: Date;

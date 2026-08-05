@@ -16,6 +16,7 @@ export class CreateBadgeHandler implements ICommandHandler<CreateBadgeCommand> {
       this.badgeRepo.create({
         name: command.name,
         threshold: command.threshold,
+        tier: command.tier,
         description: command.description ?? null,
       }),
     );

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Action, ActionContext, ActionResult } from './action.interface';
 import { EmployeeUserEntity } from '../../users/entities/employee-user.entity';
+import { NotificationGateway } from '../../websocket/notification.gateway';
 
 @Injectable()
 export class GrantXPAction implements Action {
@@ -13,6 +14,7 @@ export class GrantXPAction implements Action {
   constructor(
     @InjectRepository(EmployeeUserEntity)
     private readonly employeeRepo: Repository<EmployeeUserEntity>,
+    private readonly notificationGateway: NotificationGateway,
   ) {}
 
   async execute(
@@ -38,6 +40,12 @@ export class GrantXPAction implements Action {
     // never from an increment, so ordering across grants can't corrupt it.
     await repo.increment({ id: employeeId }, 'xp', amount);
     const employee = await repo.findOneByOrFail({ id: employeeId });
+
+    this.notificationGateway.emitToEmployee(employeeId, 'xp:granted', {
+      amount,
+      xp: employee.xp,
+      level: employee.level,
+    });
 
     return {
       shouldEmit: true,

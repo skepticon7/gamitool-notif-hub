@@ -5,7 +5,7 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { EVENT_STREAM, REDIS_CLIENT } from '../../shared/redis/redis.constants';
+import { EVENT_STREAM, REDIS_STREAM_CLIENT } from '../../shared/redis/redis.constants';
 import Redis from 'ioredis';
 import { InjectModel } from '@nestjs/mongoose';
 import {
@@ -31,7 +31,7 @@ export class EmployeeProjectionConsumer
   private running: boolean = false;
 
   constructor(
-    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    @Inject(REDIS_STREAM_CLIENT) private readonly redis: Redis,
     @InjectModel(EmployeeProjection.name)
     private readonly employeeModel: Model<EmployeeProjectionDocument>,
     private readonly outboxProcessor: OutboxProcessor,

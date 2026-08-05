@@ -159,6 +159,7 @@ export class N8nProcessor extends WorkerHost {
             occurredOn: new Date(),
             payload: { employeeId, channel, correlationId, sourceEventId, errorReason },
           });
+          await this.outboxRepository.notifyWake();
         } catch (error) {
           this.logger.warn(
             `Failed to record NotificationFailed for ${correlationId}: ${error instanceof Error ? error.message : error}`,
@@ -193,6 +194,7 @@ export class N8nProcessor extends WorkerHost {
         occurredOn: new Date(),
         payload: { employeeId, channel, correlationId, sourceEventId },
       });
+      await this.outboxRepository.notifyWake();
     } catch (error) {
       this.logger.warn(
         `Failed to record NotificationDelivered for ${correlationId} (delivery itself succeeded): ${error instanceof Error ? error.message : error}`,

@@ -1,8 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { OutboxEntity } from '../entities/outbox.entity';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { BusinessException } from '../../shared/exceptions/business.exception';
+import Redis from 'ioredis';
+import { OUTBOX_WAKE_CHANNEL, REDIS_CLIENT } from '../../shared/redis/redis.constants';
 
 export const OUTBOX_MAX_ATTEMPTS = 5;
 
@@ -12,7 +14,16 @@ export class OutboxRepository {
     @InjectRepository(OutboxEntity)
     private readonly repository: Repository<OutboxEntity>,
     private readonly dataSource: DataSource,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
+
+  // Called after a caller's transaction commits (never from inside create(),
+  // which runs mid-transaction) to wake OutboxProcessor immediately instead
+  // of waiting on its next drain trigger. Fire-and-forget PUBLISH — safe to
+  // reuse REDIS_CLIENT since it's not a blocking/subscribed command.
+  async notifyWake() {
+    await this.redis.publish(OUTBOX_WAKE_CHANNEL, '1');
+  }
 
   create(manager: EntityManager, event: Partial<OutboxEntity>) {
     try {
@@ -58,6 +69,17 @@ export class OutboxRepository {
 
   async markProcessed(entity: OutboxEntity) {
     await this.repository.update(entity.id, {
+      status: 'PROCESSED',
+      publishedAt: new Date(),
+    });
+  }
+
+  // Batched equivalent of markProcessed for a whole claimed batch — one
+  // round trip instead of one per event, since a bulk XADD pipeline succeeds
+  // or fails as a set for the vast majority of cases.
+  async markProcessedBatch(ids: string[]) {
+    if (ids.length === 0) return;
+    await this.repository.update({ id: In(ids) }, {
       status: 'PROCESSED',
       publishedAt: new Date(),
     });

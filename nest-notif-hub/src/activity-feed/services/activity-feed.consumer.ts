@@ -5,7 +5,7 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { EVENT_STREAM, REDIS_CLIENT } from '../../shared/redis/redis.constants';
+import { EVENT_STREAM, REDIS_STREAM_CLIENT } from '../../shared/redis/redis.constants';
 import Redis from 'ioredis';
 import { InjectModel } from '@nestjs/mongoose';
 import {ActivityFeedEntry , ActivityFeedEntryDocument} from '../schemas/activity-feed-entry.schema'
@@ -13,6 +13,7 @@ import { Model } from 'mongoose';
 import { OutboxProcessor } from '../../outbox/services/outbox.processor';
 import { NotificationGateway } from '../../websocket/notification.gateway';
 import { formatActivityMessage } from './format-activity-message';
+import { RulesCache } from '../../rule-engine/services/rules-cache';
 
 const CONSUMER_GROUP = 'activity-feed';
 const CONSUMER_NAME = `process-${process.pid}`;
@@ -29,11 +30,12 @@ export class ActivityFeedConsumer
   private running: boolean = false;
 
   constructor(
-    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    @Inject(REDIS_STREAM_CLIENT) private readonly redis: Redis,
     @InjectModel(ActivityFeedEntry.name)
     private readonly activityModel: Model<ActivityFeedEntryDocument>,
     private readonly outboxProcessor: OutboxProcessor,
-    private readonly notificationGateway : NotificationGateway
+    private readonly notificationGateway : NotificationGateway,
+    private readonly rulesCache: RulesCache,
   ) {}
 
   async onModuleInit() {
@@ -94,6 +96,27 @@ export class ActivityFeedConsumer
         {$set: {employeeId : payload.employeeId , eventType ,  occurredOn : new Date(message.fields.occurredOn) , payload , message : messageText}},
         {upsert : true}
       )
+
+      if(eventType === "MissionAssigned") {
+        console.log("emitting mission assigned to user : " + payload.employeeId);
+        // Whether completing this mission will actually grant XP — derived
+        // from the live rule graph (MissionCompleted -> GrantXP wiring), not
+        // a mission-catalog field, since it's admin-configurable and can
+        // change independently of the mission itself.
+        const xpStatus = this.rulesCache
+          .get('MissionCompleted')
+          .some((rule) => rule.action === 'GrantXP');
+        this.notificationGateway.emitToEmployee(payload.employeeId , 'mission:assigned' , {
+          id: payload.assignmentId,
+          deadline: payload.deadline ?? null,
+          xpStatus,
+          mission : {
+            name: payload.missionName,
+            xpGranted : payload.xpGranted,
+            durationDays: payload.durationDays
+          }
+        })
+      }
 
       this.notificationGateway.emitToEmployee(payload.employeeId, 'activity:new' , {
         id: eventId , eventType , message: messageText , occurredOn: message.fields.occurredOn

@@ -12,6 +12,6 @@ export class GetAllBadgesHandler implements IQueryHandler<GetAllBadgesQuery> {
   ) {}
 
   execute(): Promise<BadgeEntity[]> {
-    return this.badgeRepo.find();
+    return this.badgeRepo.find({order : {threshold : 'ASC'}});
   }
 }

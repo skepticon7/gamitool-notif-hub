@@ -20,6 +20,7 @@ import { JwtAuthGuard } from '../shared/guards/jwt-auth.guard';
 import { RolesGuard } from '../shared/guards/roles.guard';
 import { Roles } from '../shared/decorators/roles.decorator';
 import { AppJwtPayload } from '../auth/types/auth.interfaces';
+import { GetLatestMissionAssignmentsQuery } from './queries/get-latest-mission-assignments.query';
 
 @Controller('missions')
 @UseGuards(JwtAuthGuard)
@@ -75,11 +76,19 @@ export class MissionsController {
       new GetMyMissionAssignmentsQuery(
         req.user.userId,
         filters.status,
-        filters.assignedFrom,
-        filters.assignedTo,
-        filters.completedFrom,
-        filters.completedTo,
       ),
     );
   }
+
+  @Get('assignments/latest')
+  latestAssignments(
+    @Req() req: { user: AppJwtPayload }
+  ) {
+    return this.queryBus.execute(
+      new GetLatestMissionAssignmentsQuery(
+        req.user.userId
+      )
+    );
+  }
+
 }

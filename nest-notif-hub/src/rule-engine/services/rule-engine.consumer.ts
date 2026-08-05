@@ -9,7 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import Redis from 'ioredis';
 import { randomUUID } from 'node:crypto';
-import { REDIS_CLIENT, EVENT_STREAM } from '../../shared/redis/redis.constants';
+import { REDIS_STREAM_CLIENT, EVENT_STREAM } from '../../shared/redis/redis.constants';
 import { ProcessedEventsEntity } from '../entities/processed-events.entity';
 import { ActionRegistry } from '../actions/action-registry';
 import { ActionResult } from '../actions/action.interface';
@@ -30,7 +30,7 @@ export class RuleEngineConsumer implements OnModuleInit, OnModuleDestroy {
   private running = false;
 
   constructor(
-    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    @Inject(REDIS_STREAM_CLIENT) private readonly redis: Redis,
     private readonly rulesCache: RulesCache,
     @InjectRepository(ProcessedEventsEntity)
     private readonly processedEventRepo: Repository<ProcessedEventsEntity>,
@@ -188,6 +188,7 @@ export class RuleEngineConsumer implements OnModuleInit, OnModuleDestroy {
         });
 
         if (result!.shouldEmit && rule.targetEvent) {
+          await this.outboxRepository.notifyWake();
           this.logger.log(
             `${eventType} -> ${rule.targetEvent} emitted (caused by ${eventId})`,
           );

@@ -28,6 +28,7 @@ export class UpdateBadgeHandler implements ICommandHandler<UpdateBadgeCommand> {
       {
         ...(command.name !== undefined && { name: command.name }),
         ...(command.threshold !== undefined && { threshold: command.threshold }),
+        ...(command.tier !== undefined && { tier: command.tier }),
         ...(command.description !== undefined && { description: command.description }),
       },
     );

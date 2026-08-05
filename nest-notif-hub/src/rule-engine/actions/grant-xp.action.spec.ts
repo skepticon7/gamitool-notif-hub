@@ -11,9 +11,10 @@ describe('GrantXPAction', () => {
   it('increments xp via the repo, reads it back, and emits the running total', async () => {
     const mockRepo = {
       increment: jest.fn().mockResolvedValue(undefined),
-      findOneByOrFail: jest.fn().mockResolvedValue({ id: 'emp-1', xp: 150 }),
+      findOneByOrFail: jest.fn().mockResolvedValue({ id: 'emp-1', xp: 150, level: 2 }),
     };
-    const action = new GrantXPAction(mockRepo as any);
+    const fakeGateway = { emitToEmployee: jest.fn() };
+    const action = new GrantXPAction(mockRepo as any, fakeGateway as any);
 
     const result = await action.execute(
       { employeeId: 'emp-1', xpGranted: 50 },
@@ -22,6 +23,11 @@ describe('GrantXPAction', () => {
     );
 
     expect(mockRepo.increment).toHaveBeenCalledWith({ id: 'emp-1' }, 'xp', 50);
+    expect(fakeGateway.emitToEmployee).toHaveBeenCalledWith('emp-1', 'xp:granted', {
+      amount: 50,
+      xp: 150,
+      level: 2,
+    });
     expect(result).toEqual({
       shouldEmit: true,
       payload: { employeeId: 'emp-1', xp: 150, xpGranted: 50 },
@@ -40,7 +46,8 @@ describe('GrantXPAction', () => {
     const manager = {
       withRepository: jest.fn().mockReturnValue(scopedRepo),
     };
-    const action = new GrantXPAction(plainRepo as any);
+    const fakeGateway = { emitToEmployee: jest.fn() };
+    const action = new GrantXPAction(plainRepo as any, fakeGateway as any);
 
     await action.execute(
       { employeeId: 'emp-1', xpGranted: 25 },

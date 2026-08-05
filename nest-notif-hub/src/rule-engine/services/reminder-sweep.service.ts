@@ -91,6 +91,7 @@ export class ReminderSweepService {
           status: 'SENT',
         });
       });
+      await this.outboxRepository.notifyWake();
       this.logger.log(`Reminder ${reminder.id} fired -> ReminderDue`);
 
       // Reschedule the next reminder in the chain — this is what makes it

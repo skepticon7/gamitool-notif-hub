@@ -51,6 +51,22 @@ export class AuthService {
     }
 
 
+    // resolveUser's ACCOUNT_NOT_PROVISIONED guard applies here too — an
+    // account could in principle be deprovisioned between the original
+    // login and this refresh, so re-check rather than trusting the old JWT.
+    async refresh(refreshToken: string) : Promise<LoginResult> {
+      const token: TokenResponse = await this.authentikService.refresh(refreshToken);
+      const profile = await this.authentikService.userInfo(token.access_token);
+      const user = await this.resolveUser(profile);
+
+      return {
+        accessToken : await this.generateJwt(user),
+        refreshToken : token.refresh_token,
+        tokenType: "Bearer",
+      }
+    }
+
+
     // Closed provisioning: an account must already exist (created via
     // CreateAccountHandler, or the one-time admin bootstrap seed) — never
     // auto-created here. Authentik proving identity is not the same as EDEN

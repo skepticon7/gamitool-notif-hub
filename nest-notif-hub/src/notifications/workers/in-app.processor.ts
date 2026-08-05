@@ -64,6 +64,7 @@ export class InAppProcessor extends WorkerHost{
                 errorReason: e instanceof Error ? e.message : String(e),
               },
             });
+            await this.outboxRepository.notifyWake();
           } catch (trackingError) {
             this.logger.warn(
               `Failed to record NotificationFailed for ${correlationId}: ${trackingError instanceof Error ? trackingError.message : trackingError}`,
@@ -97,6 +98,7 @@ export class InAppProcessor extends WorkerHost{
         occurredOn: new Date(),
         payload: { employeeId, channel: 'in-app', correlationId, sourceEventId },
       });
+      await this.outboxRepository.notifyWake();
     } catch (trackingError) {
       this.logger.warn(
         `Failed to record NotificationDelivered for ${correlationId} (delivery itself succeeded): ${trackingError instanceof Error ? trackingError.message : trackingError}`,

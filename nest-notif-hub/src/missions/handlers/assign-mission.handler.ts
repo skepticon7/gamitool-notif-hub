@@ -22,7 +22,6 @@ export class AssignMissionHandler implements ICommandHandler<AssignMissionComman
     private readonly outboxRepository: OutboxRepository,
     @InjectRepository(MissionAssignmentEntity)
     private readonly missionAssignmentRepo: Repository<MissionAssignmentEntity>,
-    private readonly queryCacheInvalidator: QueryCacheInvalidator,
   ) {}
 
   async execute(command: AssignMissionCommand) {
@@ -102,6 +101,7 @@ export class AssignMissionHandler implements ICommandHandler<AssignMissionComman
           employeeId: command.employeeId,
           missionId: command.missionId,
           missionName: mission.name,
+          xpGranted: mission.xpGranted,
           assignmentId,
           durationDays: mission.durationDays,
         },
@@ -109,11 +109,8 @@ export class AssignMissionHandler implements ICommandHandler<AssignMissionComman
 
       return manager.findOneBy(MissionAssignmentEntity, { id: assignmentId });
     });
+    await this.outboxRepository.notifyWake();
 
-    // Only after the transaction has actually committed — otherwise we'd
-    // clear the cache for a write that might still roll back.
-    await this.queryCacheInvalidator.invalidate('GetMissionAssignmentsQuery');
-    await this.queryCacheInvalidator.invalidate('GetMyMissionAssignmentsQuery');
 
     return assignment;
   }

@@ -9,9 +9,5 @@ export class GetMyMissionAssignmentsQuery {
   constructor(
     public readonly employeeId: string,
     public readonly status?: AssignmentStatus,
-    public readonly assignedFrom?: Date,
-    public readonly assignedTo?: Date,
-    public readonly completedFrom?: Date,
-    public readonly completedTo?: Date,
   ) {}
 }

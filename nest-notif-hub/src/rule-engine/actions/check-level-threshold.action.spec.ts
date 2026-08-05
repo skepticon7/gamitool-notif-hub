@@ -13,12 +13,13 @@ describe('CheckLevelThresholdAction', () => {
       findOneByOrFail: jest.fn().mockResolvedValue(employee),
       update: jest.fn().mockResolvedValue(undefined),
     };
-    const action = new CheckLevelThresholdAction(repo as any);
-    return { action, repo };
+    const gateway = { emitToEmployee: jest.fn() };
+    const action = new CheckLevelThresholdAction(repo as any, gateway as any);
+    return { action, repo, gateway };
   }
 
   it('updates the level and emits when the computed level exceeds the stored one', async () => {
-    const { action, repo } = makeAction({ id: 'emp-1', xp: 250, level: 1 });
+    const { action, repo, gateway } = makeAction({ id: 'emp-1', xp: 250, level: 1 });
 
     // baseXp=100, growthRate=1.5 -> level 2 at 100 cumulative, level 3 at 250 cumulative.
     const result = await action.execute(
@@ -28,6 +29,7 @@ describe('CheckLevelThresholdAction', () => {
     );
 
     expect(repo.update).toHaveBeenCalledWith({ id: 'emp-1' }, { level: 3 });
+    expect(gateway.emitToEmployee).toHaveBeenCalledWith('emp-1', 'level:up', { level: 3 });
     expect(result).toEqual({
       shouldEmit: true,
       payload: { employeeId: 'emp-1', newLevel: 3, previousLevel: 1 },
@@ -35,7 +37,7 @@ describe('CheckLevelThresholdAction', () => {
   });
 
   it('does nothing when the computed level does not exceed the stored one', async () => {
-    const { action, repo } = makeAction({ id: 'emp-1', xp: 50, level: 1 });
+    const { action, repo, gateway } = makeAction({ id: 'emp-1', xp: 50, level: 1 });
 
     const result = await action.execute(
       { employeeId: 'emp-1' },
@@ -44,6 +46,7 @@ describe('CheckLevelThresholdAction', () => {
     );
 
     expect(repo.update).not.toHaveBeenCalled();
+    expect(gateway.emitToEmployee).not.toHaveBeenCalled();
     expect(result).toEqual({ shouldEmit: false });
   });
 
@@ -69,7 +72,8 @@ describe('CheckLevelThresholdAction', () => {
     const plainRepo = { findOneByOrFail: jest.fn(), update: jest.fn() };
     const manager = { withRepository: jest.fn().mockReturnValue(scopedRepo) };
 
-    const action = new CheckLevelThresholdAction(plainRepo as any);
+    const fakeGateway = { emitToEmployee: jest.fn() };
+    const action = new CheckLevelThresholdAction(plainRepo as any, fakeGateway as any);
 
     await action.execute(
       { employeeId: 'emp-1' },

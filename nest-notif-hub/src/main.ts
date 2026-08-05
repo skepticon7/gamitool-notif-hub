@@ -12,6 +12,12 @@ async function bootstrap() {
   // the app's own HTTP server — it silently spins up a standalone server on
   // a random OS-assigned port instead, and app.listen(PORT) below never
   // actually binds the port everyone expects it to.
+  app.enableCors({
+    origin: ['http://localhost:3000', 'http://localhost:3100'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders : '*',
+  })
   app.useWebSocketAdapter(new IoAdapter(app));
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.use(

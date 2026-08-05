@@ -5,7 +5,7 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { EVENT_STREAM, REDIS_CLIENT } from '../../shared/redis/redis.constants';
+import { EVENT_STREAM, REDIS_STREAM_CLIENT } from '../../shared/redis/redis.constants';
 import Redis from 'ioredis';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -27,7 +27,7 @@ export class EngineActivityConsumer implements OnModuleInit, OnModuleDestroy {
   private running: boolean = false;
 
   constructor(
-    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    @Inject(REDIS_STREAM_CLIENT) private readonly redis: Redis,
     private readonly outboxProcessor: OutboxProcessor,
     private readonly notificationGateway: NotificationGateway,
     @InjectRepository(EmployeeUserEntity)

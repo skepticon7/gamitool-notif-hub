@@ -6,6 +6,7 @@ import { Action, ActionContext, ActionResult } from './action.interface';
 import { EmployeeBadgeEntity } from '../../users/entities/employee-badge.entity';
 import { MissionAssignmentEntity } from '../../missions/entities/mission-assignment.entity';
 import { BadgeEntity } from '../../badges/entities/badge.entity';
+import { NotificationGateway } from '../../websocket/notification.gateway';
 
 // Badge-agnostic on purpose: this action scans the whole badge catalog
 // instead of being told which one badge to check (no badgeId param). That
@@ -25,6 +26,7 @@ export class GrantBadgeAction implements Action {
     private readonly assignmentRepo: Repository<MissionAssignmentEntity>,
     @InjectRepository(BadgeEntity)
     private readonly badgeCatalogRepo: Repository<BadgeEntity>,
+    private readonly notificationGateway: NotificationGateway,
   ) {}
 
   async execute(
@@ -65,6 +67,10 @@ export class GrantBadgeAction implements Action {
 
     for (const badge of newlyEarned) {
       await badgeGrantRepo.insert({ id: randomUUID(), employeeId, badgeId: badge.id });
+    }
+
+    for (const badge of newlyEarned) {
+      this.notificationGateway.emitToEmployee(employeeId, 'badge:granted', { badge });
     }
 
     return {

@@ -1,53 +1,42 @@
 {
-  description = "Notification Hub Monorepo Development Environment";
+  description = "Notification Hub Development Environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
-  outputs = { self, nixpkgs }:
-    let
-      system = builtins.currentSystem;
-      pkgs = import nixpkgs {
-        inherit system;
-      };
-    in
-    {
-      devShells.${system}.default = pkgs.mkShell {
-        packages = with pkgs; [
-          # Node.js
-          nodejs_26
-          nodePackages.pnpm
+  outputs = { nixpkgs, ... }:
+  let
+    system = "x86_64-linux";
 
-          # Version Control
-          git
-
-          # Containers
-          docker
-          docker-compose
-
-          # Utilities
-          curl
-          jq
-          openssl
-        ];
-
-        shellHook = ''
-          clear
-
-          echo "🚀 Notification Hub Development Environment"
-          echo "==========================================="
-          echo ""
-          echo "Node   : $(node --version)"
-          echo "npm    : $(npm --version)"
-          echo "pnpm   : $(pnpm --version)"
-          echo "Git    : $(git --version)"
-          echo "Docker : $(docker --version | head -n1)"
-          echo ""
-          echo "Backend : npm"
-          echo "Frontend: pnpm"
-          echo ""
-        '';
-      };
+    pkgs = import nixpkgs {
+      inherit system;
     };
+  in {
+    devShells.${system}.default = pkgs.mkShell {
+      packages = with pkgs; [
+        nodejs_26
+        pnpm
+
+        git
+
+        docker
+        docker-compose
+
+        curl
+        jq
+        openssl
+      ];
+
+      shellHook = ''
+        clear
+        echo "🚀 Notification Hub Dev Environment"
+        echo ""
+        echo "Node : $(node -v)"
+        echo "npm  : $(npm -v)"
+        echo "pnpm : $(pnpm -v)"
+        echo ""
+      '';
+    };
+  };
 }

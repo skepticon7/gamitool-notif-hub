@@ -1,26 +1,115 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "../styles/tokens/fonts.css";
+@import "../styles/tokens/colors.css";
+@import "../styles/tokens/typography.css";
+@import "../styles/tokens/foundations.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* GamiTool is light-mode only (see colors.css) — shadcn primitives ship
+   dark: variants out of the box, and Tailwind's default dark: strategy
+   follows the OS color-scheme media query, not an explicit toggle. Since
+   we never add a `.dark` class anywhere, this makes every dark: utility
+   permanently inert instead of silently overriding our tokens on a
+   dark-mode system. */
+@custom-variant dark (&:where(.dark, .dark *));
 
+/* Bridges the GamiTool design tokens above into Tailwind v4's theme
+   namespaces, so components can use bg-primary, text-foreground,
+   rounded-card, shadow-card, font-sans, etc. as ordinary utilities. */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-gray: var(--gray);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-card-border: var(--card-border);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-sidebar: var(--sidebar);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-purple: var(--purple);
+  --color-orange: var(--orange);
+  --color-green: var(--green);
+  --color-red: var(--red);
+
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+
+  --color-light-blue: var(--light-blue);
+  --color-light-green: var(--light-green);
+  --color-light-pink: var(--light-pink);
+  --color-light-purple: var(--light-purple);
+  --color-light-gray: var(--light-gray);
+  --color-light-yellow: var(--light-yellow);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-app-background: var(--app-background);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-trophy-bronze-bg: var(--trophy-bronze-bg);
+  --color-trophy-bronze-fg: var(--trophy-bronze-fg);
+  --color-trophy-silver-bg: var(--trophy-silver-bg);
+  --color-trophy-silver-fg: var(--trophy-silver-fg);
+  --color-trophy-gold-bg: var(--trophy-gold-bg);
+  --color-trophy-gold-fg: var(--trophy-gold-fg);
+  --color-trophy-diamond-bg: var(--trophy-diamond-bg);
+  --color-trophy-diamond-fg: var(--trophy-diamond-fg);
+
+  --radius-card: var(--radius-card);
+  --radius-button: var(--radius-button);
+  --radius-button-lg: var(--radius-button-lg);
+  --radius-input: var(--radius-input);
+  --radius-textarea: var(--radius-textarea);
+  --radius-pill: var(--radius-pill);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-brand: var(--shadow-brand);
+  --shadow-login-card: var(--shadow-login-card);
+  --shadow-primary-glow: var(--shadow-primary-glow);
+  --drop-shadow-logo: var(--drop-shadow-logo);
+
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+/* Falling confetti piece for the Level Up overlay — no Tailwind/tw-animate-css
+   built-in covers "fall + rotate + fade", unlike the overlay's other motion
+   (pulsing rings, orbiting dashes, pop-in), which reuse animate-ping/spin/
+   animate-in instead of adding more custom keyframes here. */
+@keyframes eden-confetti {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(340px) rotate(520deg);
+  }
 }

@@ -1,0 +1,80 @@
+/* GamiTool design system — color tokens. Light-mode only. */
+:root {
+  --white: #ffffff;
+  --background: #ffffff;
+  --foreground: #003580;
+  --gray: #7a86a1;
+
+  --card: #ffffff;
+  --card-foreground: #003580;
+  --card-border: #ebebeb;
+  --popover: #ffffff;
+  --popover-foreground: #003580;
+  --sidebar: #f6faff;
+
+  --primary: #5a7bff;
+  --primary-foreground: #ffffff;
+  --secondary: #003580;
+  --secondary-foreground: #ffffff;
+  --accent: #5a7bff;
+  --accent-foreground: #ffffff;
+
+  --muted: #f2f2f2;
+  --muted-foreground: #7a86a1;
+
+  --purple: #a855f7;
+  --orange: #ff964f;
+  --green: #22c55e;
+  --red: #f96767;
+
+  --destructive: #f96767;
+  --success: #22c55e;
+  --warning: #ff964f;
+  --info: #a855f7;
+
+  --light-blue: #d3eaff;
+  --light-green: #dbffe8;
+  --light-pink: #fff4f2;
+  --light-purple: #f4e8ff;
+  --light-gray: #f2f2f2;
+  --light-yellow: #f8f3dd;
+
+  --border: #e5e7eb;
+  --border-strong: #cdd3dd;
+  --input: #f9fafb;
+  --ring: #5a7bff;
+
+  /* Page-level backdrop behind white cards/panels — distinct from --background
+     (which is the card/surface white itself). Used app-wide, not just login. */
+  --app-background: #eef4fd;
+
+  /* Modal/drawer scrim — navy-tinted rather than plain black, matching the
+     rest of the app's brand-navy shadows (--shadow-brand, --shadow-login-card). */
+  --overlay: rgba(3, 20, 60, 0.4);
+
+  --chart-1: #5a7bff;
+  --chart-2: #003580;
+  --chart-3: #a855f7;
+  --chart-4: #ff964f;
+  --chart-5: #22c55e;
+
+  --trophy-bronze-bg: #fffbf3;
+  --trophy-bronze-fg: #ffb000;
+  --trophy-silver-bg: #e9edff;
+  --trophy-silver-fg: #5a7bff;
+  --trophy-gold-bg: #f7f1ff;
+  --trophy-gold-fg: #a855f7;
+  --trophy-diamond-bg: #dbffe8;
+  --trophy-diamond-fg: #35b26b;
+
+  --toast-success: #43a047;
+  --toast-error: #d20405;
+  --toast-warning: #fbbf24;
+  --toast-info: #60a5fa;
+  --toast-loading: #60a5fa;
+
+  --gradient-primary-to-secondary: linear-gradient(90deg, #5a7bff 0%, #ac66e6 47%, #a855f7 100%);
+  --gradient-primary-to-secondary-2: linear-gradient(27.65deg, #5a7bff 8.18%, #ad6be0 63.38%, #a855f7 91.82%);
+  --gradient-chat-header: linear-gradient(90deg, #5a7bff 0%, #a855f7 100%);
+  --gradient-login-overlay: radial-gradient(120% 90% at 100% 0, rgba(255, 255, 255, 0.25), transparent 55%);
+}

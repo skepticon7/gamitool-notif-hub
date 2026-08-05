@@ -22,25 +22,28 @@ describe('GrantBadgeAction', () => {
     const badgeCatalogRepo = {
       find: jest.fn().mockResolvedValue(opts.eligibleBadges ?? []),
     };
+    const notificationGateway = { emitToEmployee: jest.fn() };
     const action = new GrantBadgeAction(
       badgeGrantRepo as any,
       assignmentRepo as any,
       badgeCatalogRepo as any,
+      notificationGateway as any,
     );
-    return { action, badgeGrantRepo, assignmentRepo, badgeCatalogRepo };
+    return { action, badgeGrantRepo, assignmentRepo, badgeCatalogRepo, notificationGateway };
   }
 
   it('emits nothing when no badge threshold is met', async () => {
-    const { action, badgeGrantRepo } = makeAction({ eligibleBadges: [] });
+    const { action, badgeGrantRepo, notificationGateway } = makeAction({ eligibleBadges: [] });
 
     const result = await action.execute({ employeeId: 'emp-1' }, {}, baseContext);
 
     expect(result).toEqual({ shouldEmit: false });
     expect(badgeGrantRepo.insert).not.toHaveBeenCalled();
+    expect(notificationGateway.emitToEmployee).not.toHaveBeenCalled();
   });
 
   it('grants a newly-eligible badge that was not already granted', async () => {
-    const { action, badgeGrantRepo } = makeAction({
+    const { action, badgeGrantRepo, notificationGateway } = makeAction({
       alreadyGranted: [],
       eligibleBadges: [{ id: 'badge-1', name: 'Bronze Achiever' }],
     });
@@ -51,6 +54,9 @@ describe('GrantBadgeAction', () => {
     expect(badgeGrantRepo.insert).toHaveBeenCalledWith(
       expect.objectContaining({ employeeId: 'emp-1', badgeId: 'badge-1' }),
     );
+    expect(notificationGateway.emitToEmployee).toHaveBeenCalledWith('emp-1', 'badge:granted', {
+      badge: { id: 'badge-1', name: 'Bronze Achiever' },
+    });
     expect(result).toEqual({
       shouldEmit: true,
       payload: { employeeId: 'emp-1', badges: [{ id: 'badge-1', name: 'Bronze Achiever' }] },
@@ -58,7 +64,7 @@ describe('GrantBadgeAction', () => {
   });
 
   it('excludes a badge that is threshold-eligible but already granted', async () => {
-    const { action, badgeGrantRepo } = makeAction({
+    const { action, badgeGrantRepo, notificationGateway } = makeAction({
       alreadyGranted: [{ badgeId: 'badge-1' }],
       eligibleBadges: [{ id: 'badge-1', name: 'Bronze Achiever' }],
     });
@@ -66,6 +72,7 @@ describe('GrantBadgeAction', () => {
     const result = await action.execute({ employeeId: 'emp-1' }, {}, baseContext);
 
     expect(badgeGrantRepo.insert).not.toHaveBeenCalled();
+    expect(notificationGateway.emitToEmployee).not.toHaveBeenCalled();
     expect(result).toEqual({ shouldEmit: false });
   });
 
@@ -94,10 +101,12 @@ describe('GrantBadgeAction', () => {
       }),
     };
 
+    const fakeGateway = { emitToEmployee: jest.fn() };
     const action = new GrantBadgeAction(
       plainBadgeGrantRepo as any,
       plainAssignmentRepo as any,
       plainBadgeCatalogRepo as any,
+      fakeGateway as any,
     );
 
     await action.execute(

@@ -63,7 +63,10 @@ describe('InAppProcessor (integration) — jobId dedupe', () => {
     } as unknown as Job;
 
     const fakeGateway = { emitToEmployee: jest.fn() };
-    const fakeOutboxRepository = { create: jest.fn().mockResolvedValue(undefined) };
+    const fakeOutboxRepository = {
+      create: jest.fn().mockResolvedValue(undefined),
+      notifyWake: jest.fn().mockResolvedValue(undefined),
+    };
 
     const processor = new InAppProcessor(
       dataSource.getRepository(InAppNotificationEntity), // real — the unique jobId constraint lives here

@@ -82,6 +82,7 @@ export class CompleteMissionHandler implements ICommandHandler<CompleteMissionCo
 
       return manager.findOneBy(MissionAssignmentEntity, { id: command.assignmentId });
     });
+    await this.outboxRepository.notifyWake();
 
     // Only after the transaction has actually committed — otherwise we'd
     // clear the cache for a write that might still roll back.

@@ -19,10 +19,6 @@ export class MissionAssignmentsController {
     return this.queryBus.execute(
       new GetMissionAssignmentsQuery(
         filters.status,
-        filters.assignedFrom,
-        filters.assignedTo,
-        filters.completedFrom,
-        filters.completedTo,
       ),
     );
   }

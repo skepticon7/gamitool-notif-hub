@@ -50,7 +50,12 @@ describe('ReminderSweepService (integration) — escalation chain', () => {
     });
     await dataSource.initialize();
 
-    const outboxRepository = new OutboxRepository(dataSource.getRepository(OutboxEntity), dataSource);
+    const fakeRedisClient = { publish: jest.fn().mockResolvedValue(1) };
+    const outboxRepository = new OutboxRepository(
+      dataSource.getRepository(OutboxEntity),
+      dataSource,
+      fakeRedisClient as any,
+    );
     sweepService = new ReminderSweepService(
       dataSource.getRepository(ScheduledReminderEntity),
       outboxRepository,

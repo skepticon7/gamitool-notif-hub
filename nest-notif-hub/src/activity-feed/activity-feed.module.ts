@@ -8,6 +8,7 @@ import { ActivityFeedEntry, ActivityFeedEntrySchema } from './schemas/activity-f
 import { ActivityFeedController } from './activity-feed.controller';
 import { ActivityFeedConsumer } from './services/activity-feed.consumer';
 import { GetMyActivityFeedHandler } from './handlers/get-my-activity-feed.handler';
+import { RulesCacheModule } from '../rule-engine/rules-cache.module';
 
 const handlers = [GetMyActivityFeedHandler]
 
@@ -16,6 +17,7 @@ const handlers = [GetMyActivityFeedHandler]
     WebsocketModule ,
     CqrsModule,
     OutboxModule ,
+    RulesCacheModule ,
     MongooseModule.forFeature([{name : ActivityFeedEntry.name , schema : ActivityFeedEntrySchema}]),
   ],
   controllers: [ActivityFeedController],

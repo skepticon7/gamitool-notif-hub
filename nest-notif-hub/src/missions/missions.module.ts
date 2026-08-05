@@ -24,6 +24,7 @@ import { CreateSchedulmentHandler } from './handlers/create-schedulment.handler'
 import { UpdateSchedulmentHandler } from './handlers/update-schedulment.handler';
 import { CancelSchedulmentHandler } from './handlers/cancel-schedulment.handler';
 import { GetSchedulmentsHandler } from './handlers/get-schedulments.handler';
+import { GetLatestMissionAssignmentsHandler } from './handlers/get-latest-mission-assignments.handler';
 
 const CommandHandlers = [
   AssignMissionHandler,
@@ -35,12 +36,14 @@ const CommandHandlers = [
   CreateSchedulmentHandler,
   UpdateSchedulmentHandler,
   CancelSchedulmentHandler,
+
 ];
 const QueryHandlers = [
   GetAllMissionsHandler,
   GetMissionAssignmentsHandler,
   GetMyMissionAssignmentsHandler,
   GetSchedulmentsHandler,
+  GetLatestMissionAssignmentsHandler
 ];
 
 @Module({
