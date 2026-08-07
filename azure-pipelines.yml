@@ -51,6 +51,12 @@ jobs:
       MYSQL_DATABASE: gamitool_notif_hub
       REDIS_HOST: 127.0.0.1
       REDIS_PORT: 6379
+      # Unlike GitHub Actions' setup-node (which knows npm's cache dir
+      # automatically), Azure's Cache@2 task needs an explicit real path.
+      # Defining it as a variable also exports it as NPM_CONFIG_CACHE, so
+      # npm ci actually reads/writes this same directory — without that,
+      # the cache would round-trip against a path npm never touched.
+      npm_config_cache: $(Pipeline.Workspace)/.npm
     steps:
       - task: NodeTool@0
         inputs:
