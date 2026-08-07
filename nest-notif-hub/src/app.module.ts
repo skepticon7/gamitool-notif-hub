@@ -30,6 +30,14 @@ import { ActivityFeedModule } from './activity-feed/activity-feed.module';
       database: process.env.MYSQL_DATABASE,
       autoLoadEntities: true,
       synchronize: true,
+      // mysql2's default pool is 10, shared across the whole app. Now that
+      // RuleEngineConsumer runs multiple concurrent workers, each handling
+      // several events and rules in parallel, that default is too easy to
+      // saturate — a burst of activity there would queue out unrelated
+      // requests elsewhere (e.g. GET /employees/me) behind it. Still well
+      // short of MySQL's own default max_connections (151), just real
+      // headroom instead of the implicit default.
+      extra: { connectionLimit: 20 },
     }),
     MongooseModule.forRoot(process.env.MONGO_URI!),
     RedisModule,

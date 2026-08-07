@@ -5,10 +5,16 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { EVENT_STREAM, REDIS_STREAM_CLIENT } from '../../shared/redis/redis.constants';
+import {
+  EVENT_STREAM,
+  REDIS_STREAM_CLIENT,
+} from '../../shared/redis/redis.constants';
 import Redis from 'ioredis';
 import { InjectModel } from '@nestjs/mongoose';
-import {ActivityFeedEntry , ActivityFeedEntryDocument} from '../schemas/activity-feed-entry.schema'
+import {
+  ActivityFeedEntry,
+  ActivityFeedEntryDocument,
+} from '../schemas/activity-feed-entry.schema';
 import { Model } from 'mongoose';
 import { OutboxProcessor } from '../../outbox/services/outbox.processor';
 import { NotificationGateway } from '../../websocket/notification.gateway';
@@ -27,9 +33,7 @@ const BLOCK_MS = 5000;
 type StreamMessage = { id: string; fields: Record<string, string> };
 
 @Injectable()
-export class ActivityFeedConsumer
-  implements OnModuleInit, OnModuleDestroy
-{
+export class ActivityFeedConsumer implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ActivityFeedConsumer.name);
   private running: boolean = false;
 
@@ -38,7 +42,7 @@ export class ActivityFeedConsumer
     @InjectModel(ActivityFeedEntry.name)
     private readonly activityModel: Model<ActivityFeedEntryDocument>,
     private readonly outboxProcessor: OutboxProcessor,
-    private readonly notificationGateway : NotificationGateway,
+    private readonly notificationGateway: NotificationGateway,
     private readonly rulesCache: RulesCache,
     @InjectRepository(MissionAssignmentEntity)
     private readonly assignmentRepo: Repository<MissionAssignmentEntity>,
@@ -75,98 +79,143 @@ export class ActivityFeedConsumer
 
   private async loop() {
     while (this.running) {
+      let messages: StreamMessage[];
       try {
-        const messages = await this.readNextBatch();
-        for (const message of messages) {
-          await this.handle(message);
-        }
+        messages = await this.readNextBatch();
       } catch (error) {
+        // A read-level failure is the genuine "stream/group might be
+        // lost" case replayRecent() exists for — a message-processing
+        // failure (handled inside handle() now) must never trigger this,
+        // or a single unfixable message would replay forever.
         this.logger.error(
           'activity feed consumer read loop failed',
           error instanceof Error ? error.stack : String(error),
         );
         await this.ensureConsumerGroup();
         await this.outboxProcessor.replayRecent();
+        continue;
+      }
+      for (const message of messages) {
+        await this.handle(message);
       }
     }
   }
 
   private async handle(message: StreamMessage) {
-    const { eventType  , eventId} = message.fields;
-    const payload = message.fields.payload ? JSON.parse(message.fields.payload) : {};
-    const messageText = formatActivityMessage(eventType , payload);
-    if(messageText && payload.employeeId) {
+    const { eventType, eventId } = message.fields;
+    try {
+      const payload = message.fields.payload
+        ? JSON.parse(message.fields.payload)
+        : {};
+      const messageText = formatActivityMessage(eventType, payload);
+      if (messageText && payload.employeeId) {
+        // OutboxProcessor.replayRecent() re-XADDs every outbox row from the
+        // last 24h as brand-new stream entries any time a consumer self-heals
+        // from NOGROUP — so this exact event can legitimately arrive here
+        // more than once. The Mongo upsert below is already safe on replay
+        // (same _id: eventId), but nothing emitted over the socket has any
+        // dedup of its own — a naive frontend counter incrementing/
+        // decrementing on mission:assigned/completed/expired would double
+        // count on every replay. Checking whether this eventId was already
+        // recorded BEFORE emitting is what stops that — mirrors the
+        // protection RuleEngineConsumer already gets from processed_events.
+        const alreadyRecorded = await this.activityModel.exists({
+          _id: eventId,
+        });
 
-      // OutboxProcessor.replayRecent() re-XADDs every outbox row from the
-      // last 24h as brand-new stream entries any time a consumer self-heals
-      // from NOGROUP — so this exact event can legitimately arrive here
-      // more than once. The Mongo upsert below is already safe on replay
-      // (same _id: eventId), but nothing emitted over the socket has any
-      // dedup of its own — a naive frontend counter incrementing/
-      // decrementing on mission:assigned/completed/expired would double
-      // count on every replay. Checking whether this eventId was already
-      // recorded BEFORE emitting is what stops that — mirrors the
-      // protection RuleEngineConsumer already gets from processed_events.
-      const alreadyRecorded = await this.activityModel.exists({ _id: eventId });
+        await this.activityModel.updateOne(
+          { _id: eventId },
+          {
+            $set: {
+              employeeId: payload.employeeId,
+              eventType,
+              occurredOn: new Date(message.fields.occurredOn),
+              payload,
+              message: messageText,
+            },
+          },
+          { upsert: true },
+        );
 
-      await this.activityModel.updateOne(
-        {_id: eventId},
-        {$set: {employeeId : payload.employeeId , eventType ,  occurredOn : new Date(message.fields.occurredOn) , payload , message : messageText}},
-        {upsert : true}
-      )
+        if (alreadyRecorded) {
+          await this.redis.xack(EVENT_STREAM, CONSUMER_GROUP, message.id);
+          return;
+        }
 
-      if (alreadyRecorded) {
-        await this.redis.xack(EVENT_STREAM, CONSUMER_GROUP, message.id);
-        return;
-      }
+        if (eventType === 'MissionAssigned') {
+          console.log(
+            'emitting mission assigned to user : ' + payload.employeeId,
+          );
+          this.notificationGateway.emitToEmployee(
+            payload.employeeId,
+            'mission:assigned',
+            {
+              id: payload.assignmentId,
+              deadline: payload.deadline ?? null,
+              xpStatus: this.xpGrantedOnCompletion(),
+              assignedAt: payload.assignedAt,
+              missionId: payload.missionId,
+              status: 'ASSIGNED',
+              mission: {
+                name: payload.missionName,
+                xpGranted: payload.xpGranted,
+                durationDays: payload.durationDays,
+              },
+            },
+          );
+        }
 
-      if(eventType === "MissionAssigned") {
-        console.log("emitting mission assigned to user : " + payload.employeeId);
+        // MissionCompleted/MissionExpired both carry assignmentId — reusing
+        // AssignmentDto (fed by a fresh row, same as the REST endpoints) here
+        // instead of hand-building an equivalent object from the event
+        // payload keeps this shape from drifting out of sync with what
+        // GET /missions/my-assignments and /assignments/latest return.
+        if (
+          eventType === 'MissionCompleted' ||
+          eventType === 'MissionExpired'
+        ) {
+          const assignment = await this.assignmentRepo.findOne({
+            where: { id: payload.assignmentId },
+            relations: { mission: true },
+          });
+          if (assignment) {
+            const dto = new AssignmentDto(
+              assignment,
+              this.xpGrantedOnCompletion(),
+            );
+            this.notificationGateway.emitToEmployee(
+              payload.employeeId,
+              eventType === 'MissionCompleted'
+                ? 'mission:completed'
+                : 'mission:expired',
+              dto,
+            );
+          }
+        }
+
         this.notificationGateway.emitToEmployee(
           payload.employeeId,
-          'mission:assigned',
+          'activity:new',
           {
-            id: payload.assignmentId,
-            deadline: payload.deadline ?? null,
-            xpStatus: this.xpGrantedOnCompletion(),
-            assignedAt: payload.assignedAt,
-            missionId: payload.missionId,
-            status:'ASSIGNED',
-            mission: {
-              name: payload.missionName,
-              xpGranted: payload.xpGranted,
-              durationDays: payload.durationDays,
-            },
+            id: eventId,
+            eventType,
+            message: messageText,
+            occurredOn: message.fields.occurredOn,
           },
         );
       }
-
-      // MissionCompleted/MissionExpired both carry assignmentId — reusing
-      // AssignmentDto (fed by a fresh row, same as the REST endpoints) here
-      // instead of hand-building an equivalent object from the event
-      // payload keeps this shape from drifting out of sync with what
-      // GET /missions/my-assignments and /assignments/latest return.
-      if (eventType === 'MissionCompleted' || eventType === 'MissionExpired') {
-        const assignment = await this.assignmentRepo.findOne({
-          where: { id: payload.assignmentId },
-          relations: { mission: true },
-        });
-        if (assignment) {
-          const dto = new AssignmentDto(assignment, this.xpGrantedOnCompletion());
-          this.notificationGateway.emitToEmployee(
-            payload.employeeId,
-            eventType === 'MissionCompleted' ? 'mission:completed' : 'mission:expired',
-            dto,
-          );
-        }
-      }
-
-      this.notificationGateway.emitToEmployee(payload.employeeId, 'activity:new' , {
-        id: eventId , eventType , message: messageText , occurredOn: message.fields.occurredOn
-      })
-
+      await this.redis.xack(EVENT_STREAM, CONSUMER_GROUP, message.id);
+    } catch (error) {
+      // A genuine, non-transient processing failure — never trigger a
+      // stream-wide replay for this (see RuleEngineConsumer for the
+      // incident that motivated this). Leave this message unacked
+      // instead: quarantined, not retried automatically, not able to
+      // spin the whole pipeline.
+      this.logger.error(
+        `${eventType} (${eventId}): message processing failed, leaving unacked`,
+        error instanceof Error ? error.stack : String(error),
+      );
     }
-    await this.redis.xack(EVENT_STREAM, CONSUMER_GROUP, message.id);
   }
 
   // Whether completing a mission actually grants XP — derived from the live

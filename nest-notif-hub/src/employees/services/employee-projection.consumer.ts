@@ -5,7 +5,10 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { EVENT_STREAM, REDIS_STREAM_CLIENT } from '../../shared/redis/redis.constants';
+import {
+  EVENT_STREAM,
+  REDIS_STREAM_CLIENT,
+} from '../../shared/redis/redis.constants';
 import Redis from 'ioredis';
 import { InjectModel } from '@nestjs/mongoose';
 import {
@@ -15,13 +18,12 @@ import {
 import { Model } from 'mongoose';
 import { OutboxProcessor } from '../../outbox/services/outbox.processor';
 
-const CONSUMER_GROUP = 'employees-projection'
+const CONSUMER_GROUP = 'employees-projection';
 const CONSUMER_NAME = `process-${process.pid}`;
 const READ_COUNT = 10;
 const BLOCK_MS = 5000;
 
 type StreamMessage = { id: string; fields: Record<string, string> };
-
 
 @Injectable()
 export class EmployeeProjectionConsumer
@@ -67,48 +69,66 @@ export class EmployeeProjectionConsumer
   }
 
   private async loop() {
-    while(this.running) {
+    while (this.running) {
+      let messages: StreamMessage[];
       try {
-        const messages = await this.readNextBatch();
-        for(const message of messages) {
-          await this.handle(message);
-        }
-      }catch (error) {
+        messages = await this.readNextBatch();
+      } catch (error) {
+        // A read-level failure is the genuine "stream/group might be
+        // lost" case replayRecent() exists for — a message-processing
+        // failure (handled inside handle() now) must never trigger this,
+        // or a single unfixable message would replay forever.
         this.logger.error(
           'employees projection consumer read loop failed',
           error instanceof Error ? error.stack : String(error),
         );
         await this.ensureConsumerGroup();
         await this.outboxProcessor.replayRecent();
+        continue;
+      }
+      for (const message of messages) {
+        await this.handle(message);
       }
     }
   }
 
   private async handle(message: StreamMessage) {
     const { eventType } = message.fields;
-    const payload = message.fields.payload ? JSON.parse(message.fields.payload) : {};
-    switch (eventType) {
-      case 'XPGranted':
-        await this.employeeModel.updateOne(
-          { _id: payload.employeeId },
-          { $set: { xp: payload.xp } },
-          { upsert: true },
-        );
-        break;
-      case 'LevelUp':
-        await this.employeeModel.updateOne(
-          { _id: payload.employeeId },
-          { $set: { level: payload.newLevel } },
-          { upsert: true },
-        );
-        break;
-      default:
-        // Not an event this projection cares about — normal, expected,
-        // happens for every MissionCompleted/MissionAssigned/etc. flowing
-        // through the same shared stream. Not an error condition.
-        break;
+    try {
+      const payload = message.fields.payload
+        ? JSON.parse(message.fields.payload)
+        : {};
+      switch (eventType) {
+        case 'XPGranted':
+          await this.employeeModel.updateOne(
+            { _id: payload.employeeId },
+            { $set: { xp: payload.xp } },
+            { upsert: true },
+          );
+          break;
+        case 'LevelUp':
+          await this.employeeModel.updateOne(
+            { _id: payload.employeeId },
+            { $set: { level: payload.newLevel } },
+            { upsert: true },
+          );
+          break;
+        default:
+          // Not an event this projection cares about — normal, expected,
+          // happens for every MissionCompleted/MissionAssigned/etc. flowing
+          // through the same shared stream. Not an error condition.
+          break;
+      }
+      await this.redis.xack(EVENT_STREAM, CONSUMER_GROUP, message.id);
+    } catch (error) {
+      // A genuine, non-transient processing failure — never trigger a
+      // stream-wide replay for this. Leave this message unacked instead:
+      // quarantined, not retried automatically.
+      this.logger.error(
+        `${eventType}: message processing failed, leaving unacked`,
+        error instanceof Error ? error.stack : String(error),
+      );
     }
-    await this.redis.xack(EVENT_STREAM , CONSUMER_GROUP , message.id);
   }
 
   private async readNextBatch(): Promise<StreamMessage[]> {

@@ -5,7 +5,10 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { EVENT_STREAM, REDIS_STREAM_CLIENT } from '../../shared/redis/redis.constants';
+import {
+  EVENT_STREAM,
+  REDIS_STREAM_CLIENT,
+} from '../../shared/redis/redis.constants';
 import Redis from 'ioredis';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -31,7 +34,7 @@ export class EngineActivityConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly outboxProcessor: OutboxProcessor,
     private readonly notificationGateway: NotificationGateway,
     @InjectRepository(EmployeeUserEntity)
-    private readonly employeeRepository : Repository<EmployeeUserEntity>,
+    private readonly employeeRepository: Repository<EmployeeUserEntity>,
   ) {}
 
   async onModuleInit() {
@@ -65,36 +68,58 @@ export class EngineActivityConsumer implements OnModuleInit, OnModuleDestroy {
 
   private async loop() {
     while (this.running) {
+      let messages: StreamMessage[];
       try {
-        const messages = await this.readNextBatch();
-        for (const message of messages) {
-          await this.handle(message);
-        }
+        messages = await this.readNextBatch();
       } catch (error) {
+        // A read-level failure is the genuine "stream/group might be
+        // lost" case replayRecent() exists for — a message-processing
+        // failure (handled inside handle() now) must never trigger this,
+        // or a single unfixable message would replay forever.
         this.logger.error(
-          'activity feed consumer read loop failed',
+          'engine activity consumer read loop failed',
           error instanceof Error ? error.stack : String(error),
         );
         await this.ensureConsumerGroup();
         await this.outboxProcessor.replayRecent();
+        continue;
+      }
+      for (const message of messages) {
+        await this.handle(message);
       }
     }
   }
 
   private async handle(message: StreamMessage) {
     const { eventType } = message.fields;
-    const payload = message.fields.payload
-      ? JSON.parse(message.fields.payload)
-      : {};
-    const employee = payload.employeeId ? await this.employeeRepository.findOneBy({id: payload.employeeId}) : null;
+    try {
+      const payload = message.fields.payload
+        ? JSON.parse(message.fields.payload)
+        : {};
+      const employee = payload.employeeId
+        ? await this.employeeRepository.findOneBy({ id: payload.employeeId })
+        : null;
 
-    this.notificationGateway.broadcastToAdmins('engine-activity:new', {
-      eventType,
-      message: formatEngineActivityMessage(eventType, payload, employee?.name),
-      occurredOn: message.fields.occurredOn,
-    });
+      this.notificationGateway.broadcastToAdmins('engine-activity:new', {
+        eventType,
+        message: formatEngineActivityMessage(
+          eventType,
+          payload,
+          employee?.name,
+        ),
+        occurredOn: message.fields.occurredOn,
+      });
 
-    await this.redis.xack(EVENT_STREAM, CONSUMER_GROUP, message.id);
+      await this.redis.xack(EVENT_STREAM, CONSUMER_GROUP, message.id);
+    } catch (error) {
+      // A genuine, non-transient processing failure — never trigger a
+      // stream-wide replay for this. Leave this message unacked instead:
+      // quarantined, not retried automatically.
+      this.logger.error(
+        `${eventType}: message processing failed, leaving unacked`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
   }
 
   private async readNextBatch(): Promise<StreamMessage[]> {

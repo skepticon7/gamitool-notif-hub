@@ -20,6 +20,7 @@ export interface ActionContext {
   // jobId) since their side effect can't be protected by `manager`'s
   // transaction the way a MySQL write can.
   eventId: string;
+  eventType: string;
   ruleId: string;
   correlationId: string;
 }

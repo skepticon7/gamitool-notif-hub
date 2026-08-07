@@ -1,66 +1,111 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Info } from 'lucide-react';
+import {AlertTriangle, Award, CheckCircle2, ClipboardList, Clock, Info, TrendingUp} from 'lucide-react';
 import { toast } from 'sonner';
 import { useSocketEvent } from '@/hooks/use-socket-event';
 import { BellIcon } from '@/components/shared/app-shell/nav-icons';
 import { formatRelativeTime } from '@/features/activity-feed';
 import { useNotificationsQuery } from '../queries/use-notifications-query';
-import { useUnreadCountQuery } from '../queries/use-unread-count-query';
 import { useMarkNotificationReadMutation } from '../mutations/use-mark-notification-read-mutation';
 import { useMarkAllReadMutation } from '../mutations/use-mark-all-read-mutation';
-import { useLiveUnreadCount } from '../hooks/use-live-unread-count';
-import type { AppNotification } from '../types';
+import type {AppNotification, NotificationPayload} from '../types';
+import {queryClient} from "@/lib/query-client";
+import {UNREAD_COUNT_QUERY_KEY} from "@/features/notifications/constants";
+import {useUnreadCountQuery} from "@/features/notifications";
+import {useQueryClient} from "@tanstack/react-query";
+
+
+const EVENT_STYLES: Record<string, { Icon: typeof Info; fg: string; bg: string }> = {
+    MissionAssigned: { Icon: ClipboardList, fg: 'var(--primary)', bg: 'var(--light-blue)' },
+    MissionCompleted: { Icon: CheckCircle2, fg: 'var(--success)', bg: 'var(--light-green)' },
+    MissionExpired: { Icon: Clock, fg: 'var(--destructive)', bg: 'var(--light-pink)' },
+    LevelUp: { Icon: TrendingUp, fg: 'var(--info)', bg: 'var(--light-purple)' },
+    BadgeUnlocked: { Icon: Award, fg: 'var(--warning)', bg: 'var(--light-yellow)' },
+    ReminderDue: { Icon: Clock, fg: 'var(--orange)', bg: '#fff2e6' },
+};
+
+const DEFAULT_EVENT_STYLE = { Icon: Info, fg: 'var(--gray)', bg: 'var(--light-gray)' };
+
 
 export function NotificationBell() {
     const [open, setOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
+    const queryClient = useQueryClient();
+
     const unreadCount = useUnreadCountQuery();
-    const { count } = useLiveUnreadCount({
-        baseCount: unreadCount.data ?? null,
-        isReady: unreadCount.isSuccess,
-    });
+    const count = unreadCount.data;
 
     const notifications = useNotificationsQuery({ enabled: open });
-    const [liveNotifications, setLiveNotifications] = useState<AppNotification[]>([]);
+
+    const [liveNotifications, setLiveNotifications] =
+        useState<AppNotification[]>([]);
+
     const markRead = useMarkNotificationReadMutation();
     const markAllRead = useMarkAllReadMutation();
 
-    // A reminder is meant to be more prominent than the badge alone (see
-    // CLAUDE.md's WebSocket section) — the toast fires regardless of
-    // whether the dropdown has ever been opened. The list merge is gated on
-    // notifications.isSuccess (REST-first-then-live, same rule as every
-    // other live-updating panel) — safe to drop pre-open pushes here since
-    // the eventual first-open fetch reflects true DB state anyway.
     const handleNew = useCallback(
-        (payload: AppNotification) => {
-            if (payload.kind === 'reminder') {
-                toast.warning(payload.message, { duration: 8000 });
+        ({ notification, unreadCount }: NotificationPayload) => {
+            queryClient.setQueryData(
+                UNREAD_COUNT_QUERY_KEY,
+                unreadCount,
+            );
+
+            if (notification.kind === 'reminder') {
+                toast.warning(notification.message, {
+                    duration: 8000,
+                });
             }
-            if (!notifications.isSuccess) return;
-            setLiveNotifications((prev) => [payload, ...prev]);
+
+            if (!notifications.isSuccess) {
+                return;
+            }
+
+            setLiveNotifications(prev => [
+                notification,
+                ...prev,
+            ]);
         },
-        [notifications.isSuccess],
+        [notifications.isSuccess, queryClient],
     );
-    useSocketEvent<AppNotification>('notification:new', handleNew);
+
+    useSocketEvent<NotificationPayload>(
+        'notification:new',
+        handleNew,
+    );
 
     useEffect(() => {
         if (!open) return;
+
         const handleClickOutside = (e: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+            if (
+                containerRef.current &&
+                !containerRef.current.contains(e.target as Node)
+            ) {
                 setOpen(false);
             }
         };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+
+        document.addEventListener(
+            'mousedown',
+            handleClickOutside,
+        );
+
+        return () =>
+            document.removeEventListener(
+                'mousedown',
+                handleClickOutside,
+            );
     }, [open]);
 
     const restItems = notifications.data ?? [];
-    const restIds = new Set(restItems.map((n) => n.id));
-    const items = [...liveNotifications.filter((n) => !restIds.has(n.id)), ...restItems];
+    const restIds = new Set(restItems.map(n => n.id));
 
+    const items = [
+        ...liveNotifications.filter(n => !restIds.has(n.id)),
+        ...restItems,
+    ];
     const handleMarkRead = (id: string) => {
         markRead.mutate(id, {
             onSuccess: () => setLiveNotifications((prev) => prev.filter((n) => n.id !== id)),
@@ -118,40 +163,46 @@ export function NotificationBell() {
                             <div className="p-[34px] text-center text-[13px] text-gray">You&apos;re all caught up.</div>
                         )}
 
-                        {items.map((notification) => {
-                            const isReminder = notification.kind === 'reminder';
+                        {items.map((notification , index) => {
+                            const style = EVENT_STYLES[notification.eventType] ?? DEFAULT_EVENT_STYLE;
+                            const Icon = style.Icon;
+                            const isLast = index === items.length - 1;
                             return (
                                 <button
                                     key={notification.id}
                                     type="button"
                                     onClick={() => handleMarkRead(notification.id)}
-                                    className="flex w-full cursor-pointer items-start gap-3 border-b border-[#f1f4fa] px-[18px] py-3.5 text-left last:border-b-0"
-                                    style={{
-                                        background: isReminder ? '#fff8f4' : '#f8fbff',
-                                        borderLeft: isReminder ? '3px solid var(--orange)' : '3px solid transparent',
-                                    }}
+                                    className="flex w-full cursor-pointer gap-3 border-b border-[#f1f4fa] px-[18px] py-3.5 text-left last:border-b-0"
                                 >
-                                    <div
-                                        className={`flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[10px] ${
-                                            isReminder ? 'bg-[#fff2e6] text-orange' : 'bg-light-gray text-gray'
-                                        }`}
-                                    >
-                                        {isReminder ? <AlertTriangle size={14} /> : <Info size={14} />}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        {isReminder && (
-                                            <span className="mb-1 inline-block rounded-[5px] bg-orange px-1.5 py-0.5 text-[9.5px] font-extrabold tracking-[.05em] text-white">
-                                                REMINDER
-                                            </span>
+                                    <div className="flex flex-col items-center">
+                                        <div
+                                            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-[9px]"
+                                            style={{
+                                                color: style.fg,
+                                                background: style.bg,
+                                            }}
+                                        >
+                                            <Icon size={14} />
+                                        </div>
+
+                                        {!isLast && (
+                                            <div className="mt-0.5 w-0.5 flex-1 bg-[#eef2f8]" />
                                         )}
+                                    </div>
+
+                                    <div className="min-w-0 flex-1 pb-1.5">
                                         <div className="text-[13px] leading-snug text-foreground">
                                             {notification.message}
                                         </div>
-                                        <div className="mt-1 text-[11px] text-[#aab3c6]">
+
+                                        <div className="mt-0.5 text-[11px] text-[#aab3c6]">
                                             {formatRelativeTime(notification.createdAt)}
                                         </div>
                                     </div>
-                                    <span className="mt-1.5 h-[9px] w-[9px] flex-shrink-0 rounded-full bg-primary" />
+
+                                    {!notification.read && (
+                                        <span className="mt-1.5 h-[9px] w-[9px] flex-shrink-0 rounded-full bg-primary" />
+                                    )}
                                 </button>
                             );
                         })}

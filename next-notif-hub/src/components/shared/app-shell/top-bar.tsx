@@ -20,10 +20,7 @@ export function TopBar() {
 
             <div className="flex-1" />
 
-            <div className="flex items-center gap-2 text-[13px] font-semibold text-gray">
-                <span className="h-2 w-2 rounded-full bg-green" />
-                Live · WebSocket
-            </div>
+
 
             {user.role === 'employee' && <NotificationBell />}
 

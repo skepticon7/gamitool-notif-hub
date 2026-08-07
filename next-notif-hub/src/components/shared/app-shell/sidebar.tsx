@@ -141,21 +141,7 @@ export function Sidebar() {
 
                 <div className="flex-1" />
 
-                {!collapsed && (
-                    <div
-                        className="mx-1.5 mt-2 rounded-2xl border border-[#dfe8ff] p-3.5"
-                        style={{ background: 'linear-gradient(160deg, #f2f6ff, #eaf1ff)' }}
-                    >
-                        <div className="mb-1 text-xs font-bold text-foreground">
-                            {user.role === 'admin' ? 'Guardrails on' : 'Keep your streak alive'}
-                        </div>
-                        <div className="text-[11.5px] leading-snug text-gray">
-                            {user.role === 'admin'
-                                ? 'You can only wire pre-approved events and actions. Invalid combinations are blocked automatically.'
-                                : 'Complete a mission today to keep earning XP.'}
-                        </div>
-                    </div>
-                )}
+
 
                 <button
                     type="button"

@@ -5,7 +5,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { NotifyAction } from './actions/notify.action';
 import { N8nProcessor } from './workers/n8n.processor';
 import { UsersModule } from '../users/users.module';
-import { InAppProcessor } from './workers/in-app.processor';
 import { OutboxModule } from '../outbox/outbox.module';
 import { WebsocketModule } from '../websocket/websocket.module';
 import { NotificationsController } from './notifications.controller';
@@ -30,7 +29,6 @@ const CommandHandlers = [MarkNotificationReadHandler, MarkAllNotificationsReadHa
   imports: [
     BullModule.registerQueue(
       { name: 'n8n' },
-      { name: 'in-app' },
     ),
     TypeOrmModule.forFeature([InAppNotificationEntity]),
     UsersModule,
@@ -39,7 +37,7 @@ const CommandHandlers = [MarkNotificationReadHandler, MarkAllNotificationsReadHa
     CqrsModule,
   ],
   controllers: [NotificationsController, InAppNotificationsController],
-  providers: [NotifyAction, N8nProcessor, InAppProcessor, ...QueryHandlers, ...CommandHandlers],
+  providers: [NotifyAction, N8nProcessor, ...QueryHandlers, ...CommandHandlers],
   exports: [NotifyAction],
 })
 export class NotificationsModule {}

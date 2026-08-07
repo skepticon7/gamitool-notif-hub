@@ -106,7 +106,7 @@ describe('RuleEngineConsumer (integration) — idempotency', () => {
       },
     };
 
-    await (consumer as any).handle(message);
+    await (consumer as any).handle({ xack: jest.fn() }, message);
 
     expect(fakeAction.execute).toHaveBeenCalledTimes(1);
 
@@ -156,7 +156,7 @@ describe('RuleEngineConsumer (integration) — idempotency', () => {
       }
     }
 
-    await (consumer as any).handle(message);
+    await (consumer as any).handle({ xack: jest.fn() }, message);
     expect(fakeAction.execute).not.toHaveBeenCalled();
 
     const count = await dataSource.getRepository(ProcessedEventsEntity).count({
