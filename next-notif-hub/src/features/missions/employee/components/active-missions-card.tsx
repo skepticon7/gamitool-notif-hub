@@ -10,12 +10,12 @@ import ROUTES from '@/config/constants/routes';
 import { useLatestMissionAssignmentsQuery } from '../queries/use-latest-mission-assignments-query';
 import { useCompleteMissionMutation } from '../mutations/use-complete-mission-mutation';
 import { formatDeadline } from '../../utils/format-deadline';
-import type { ActiveMissionSummary } from '../../types';
+import type { MissionAssignment } from '../../types';
 
 export function ActiveMissionsCard() {
     const assignments = useLatestMissionAssignmentsQuery();
     const completeMission = useCompleteMissionMutation();
-    const [liveMissions, setLiveMissions] = useState<ActiveMissionSummary[]>([]);
+    const [liveMissions, setLiveMissions] = useState<MissionAssignment[]>([]);
     const [completingId, setCompletingId] = useState<string | null>(null);
 
     // REST is the source of truth on load — live pushes are ignored until
@@ -24,21 +24,18 @@ export function ActiveMissionsCard() {
     // of it (e.g. get merged, then get wiped out or duplicated once the
     // REST response lands).
     const handleMissionAssigned = useCallback(
-        (payload: ActiveMissionSummary) => {
+        (payload: MissionAssignment) => {
             if (!assignments.isSuccess) return;
             setLiveMissions((prev) => [payload, ...prev]);
         },
         [assignments.isSuccess],
     );
-    useSocketEvent<ActiveMissionSummary>('mission:assigned', handleMissionAssigned);
+    useSocketEvent<MissionAssignment>('mission:assigned', handleMissionAssigned);
 
-    // Rows without an embedded `mission` are skipped rather than rendered
-    // with an undefined name — GetLatestMissionAssignmentsHandler is
-    // expected to eager-load the relation (relations: { mission: true }).
-    const restItems: ActiveMissionSummary[] = (assignments.data ?? [])
-        .filter((a) => a.mission)
-        .map((a) => ({ id: a.id, deadline: a.deadline, mission: a.mission!, xpStatus: a.xpStatus ?? false }));
-
+    // AssignmentDto guarantees `mission`/`xpStatus` on every row now — no
+    // down-mapping or defensive filtering needed, REST rows and live pushes
+    // are already the same shape.
+    const restItems = assignments.data ?? [];
     const restIds = new Set(restItems.map((item) => item.id));
     // Capped at 5 to match the endpoint's own "latest 5" semantics — without
     // this, a burst of live mission:assigned pushes could grow the panel

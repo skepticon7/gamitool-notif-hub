@@ -4,6 +4,8 @@ import { TopBar } from './top-bar';
 import { Sidebar } from './sidebar';
 import { EmployeeRewardOverlays } from './employee-reward-overlays';
 import { PageTransition } from './page-transition';
+import { MissionAssignmentCacheSync } from '@/features/missions';
+import { EmployeeProfileCacheSync } from '@/features/employees';
 
 export function AppShell({ children }: { children: ReactNode }) {
     return (
@@ -20,6 +22,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </div>
             </div>
             <EmployeeRewardOverlays />
+            <MissionAssignmentCacheSync />
+            <EmployeeProfileCacheSync />
         </AuthGuard>
     );
 }

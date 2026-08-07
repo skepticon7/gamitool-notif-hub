@@ -37,10 +37,11 @@ describe('ActivityFeedConsumer (integration) — NOGROUP self-healing', () => {
     });
 
     // 2. Fake everything except redis.
-    const fakeActivityModel = { updateOne: jest.fn() };
+    const fakeActivityModel = { updateOne: jest.fn(), exists: jest.fn().mockResolvedValue(null) };
     const fakeOutboxProcessor = { replayRecent: jest.fn().mockResolvedValue(undefined) };
     const fakeNotificationGateway = { emitToEmployee: jest.fn() };
     const fakeRulesCache = { get: jest.fn().mockReturnValue([]) };
+    const fakeAssignmentRepo = { findOne: jest.fn().mockResolvedValue(null) };
 
     const consumer = new ActivityFeedConsumer(
       redis,
@@ -48,6 +49,7 @@ describe('ActivityFeedConsumer (integration) — NOGROUP self-healing', () => {
       fakeOutboxProcessor as any,
       fakeNotificationGateway as any,
       fakeRulesCache as any,
+      fakeAssignmentRepo as any,
     );
 
     // 3. Trigger the real self-healing code, unawaited — loop() runs

@@ -5,7 +5,14 @@ import { X } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { useAuthStore } from '@/store/auth-store';
 import ROUTES from '@/config/constants/routes';
-import { useMyEmployeeProfileQuery, computeLevelProgress } from '@/features/employees';
+import {
+    useMyEmployeeProfileQuery,
+    computeLevelProgress,
+    useLiveXp,
+    useLiveLevel,
+    useLiveMissionsCompleted,
+    useLiveBadgesEarned,
+} from '@/features/employees';
 import { SignOutIcon } from './nav-icons';
 import type { AuthUser } from '@/types/auth';
 
@@ -24,8 +31,23 @@ export function ProfileDrawer({ open, onOpenChange, user }: ProfileDrawerProps) 
 
     const profile = useMyEmployeeProfileQuery({ enabled: open && isEmployee });
     const profileData = profile.data;
-    const hasXp = isEmployee && profileData?.xp != null && profileData.level != null;
-    const levelProgress = hasXp ? computeLevelProgress(profileData!.xp!) : null;
+
+    // Same live hooks the dashboard stat cards use — the drawer isn't a
+    // separate surface with its own staleness, it's just another consumer
+    // of the same xp/level/missionsCompleted/badgesEarned facts.
+    const { xp } = useLiveXp({ baseXp: profileData?.xp ?? null, isReady: profile.isSuccess });
+    const { level } = useLiveLevel({ baseLevel: profileData?.level ?? null, isReady: profile.isSuccess });
+    const { missionsCompleted } = useLiveMissionsCompleted({
+        baseCount: profileData?.missionsCompleted ?? null,
+        isReady: profile.isSuccess,
+    });
+    const { badgesEarned } = useLiveBadgesEarned({
+        baseBadgesEarned: profileData?.badgesEarned ?? null,
+        isReady: profile.isSuccess,
+    });
+
+    const hasXp = isEmployee && xp != null && level != null;
+    const levelProgress = hasXp ? computeLevelProgress(xp!) : null;
 
     const rows: { label: string; value: string }[] = [
         { label: 'Email', value: user.email },
@@ -36,21 +58,21 @@ export function ProfileDrawer({ open, onOpenChange, user }: ProfileDrawerProps) 
         rows.push(
             {
                 label: 'Total XP',
-                value: profile.isLoading ? '…' : `${profileData?.xp}`
+                value: profile.isLoading ? '…' : `${xp}`
             },
             {
                 label: 'Level',
-                value : profile.isLoading ? '…' : `${profileData?.level}`
+                value : profile.isLoading ? '…' : `${level}`
             },
             {
                 label: 'Missions completed',
-                value: profile.isLoading ? '…' : String(profileData?.missionsCompleted ?? 0),
+                value: profile.isLoading ? '…' : String(missionsCompleted ?? 0),
             },
             {
                 label: 'Badges earned',
                 value: profile.isLoading
                     ? '…'
-                    : `${profileData?.badgesEarned ?? 0} of ${profileData?.totalBadges ?? 0}`,
+                    : `${badgesEarned ?? 0} of ${profileData?.totalBadges ?? 0}`,
             },
         );
     }
@@ -93,7 +115,7 @@ export function ProfileDrawer({ open, onOpenChange, user }: ProfileDrawerProps) 
                     {hasXp && levelProgress && (
                         <div className="relative mt-4">
                             <div className="mb-1.5 flex justify-between text-[11.5px] opacity-90">
-                                <span>Level {profileData!.level}</span>
+                                <span>Level {level}</span>
                                 <span>
                                     {levelProgress.xpInto.toLocaleString('en-US')} /{' '}
                                     {levelProgress.xpForNextLevel.toLocaleString('en-US')} XP

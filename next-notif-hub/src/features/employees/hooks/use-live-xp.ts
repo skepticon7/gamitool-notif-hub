@@ -1,3 +1,6 @@
+'use client';
+
+"use client"
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSocketEvent } from '@/hooks/use-socket-event';
 import type { XpGrantedPayload } from '../types';

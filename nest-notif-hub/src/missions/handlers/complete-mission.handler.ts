@@ -76,7 +76,8 @@ export class CompleteMissionHandler implements ICommandHandler<CompleteMissionCo
           employeeId: assignment.employeeId,
           missionId: assignment.missionId,
           xpGranted: assignment.mission.xpGranted,
-          missionName: assignment.mission.name
+          missionName: assignment.mission.name,
+          assignmentId: assignment.id,
         },
       });
 

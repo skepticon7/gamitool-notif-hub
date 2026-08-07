@@ -19,13 +19,14 @@ export class AuthentikService {
     private readonly configService: ConfigService,
   ) {}
 
-  // Admin API (API_TOKEN), separate from the OIDC client used everywhere else
-  // in this service — this creates the account, it doesn't authenticate anyone.
+  // Admin API (AUTHENTIK_API_TOKEN), separate from the OIDC client used
+  // everywhere else in this service — this creates the account, it doesn't
+  // authenticate anyone.
   private adminClient(): AxiosInstance {
     return axios.create({
       baseURL: this.configService.getOrThrow<string>('AUTHENTIK_URL'),
       headers: {
-        Authorization: `Bearer ${this.configService.getOrThrow<string>('API_TOKEN')}`,
+        Authorization: `Bearer ${this.configService.getOrThrow<string>('AUTHENTIK_API_TOKEN')}`,
       },
       validateStatus: () => true,
     });
@@ -151,8 +152,8 @@ export class AuthentikService {
   // the input token only if the response genuinely omits one.
   async refresh(refreshToken: string): Promise<TokenResponse> {
     const client = this.client();
-    const clientId = this.configService.getOrThrow<string>('CLIENT_ID');
-    const clientSecret = this.configService.getOrThrow<string>('CLIENT_SECRET');
+    const clientId = this.configService.getOrThrow<string>('AUTHENTIK_CLIENT_ID');
+    const clientSecret = this.configService.getOrThrow<string>('AUTHENTIK_CLIENT_SECRET');
 
     const body = new URLSearchParams({
       grant_type: 'refresh_token',
@@ -219,9 +220,9 @@ export class AuthentikService {
   }
 
   private async exchangeSessionForTokens(client: AxiosInstance) : Promise<TokenResponse> {
-    const clientId = this.configService.getOrThrow<string>('CLIENT_ID');
-    const redirectUri = this.configService.getOrThrow<string>('CALLBACK');
-    const clientSecret = this.configService.getOrThrow<string>('CLIENT_SECRET');
+    const clientId = this.configService.getOrThrow<string>('AUTHENTIK_CLIENT_ID');
+    const redirectUri = this.configService.getOrThrow<string>('AUTHENTIK_CALLBACK');
+    const clientSecret = this.configService.getOrThrow<string>('AUTHENTIK_CLIENT_SECRET');
 
     const state = Math.random().toString(36).slice(2);
 

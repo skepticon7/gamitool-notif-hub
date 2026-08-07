@@ -103,6 +103,8 @@ export class AssignMissionHandler implements ICommandHandler<AssignMissionComman
           missionName: mission.name,
           xpGranted: mission.xpGranted,
           assignmentId,
+          assignedAt,
+          status: 'ASSIGNED',
           durationDays: mission.durationDays,
         },
       });

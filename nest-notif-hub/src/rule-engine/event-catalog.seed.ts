@@ -23,6 +23,7 @@ export const EVENT_CATALOG_SEED: { eventType: string; payloadFields: Record<stri
       missionId: 'string',
       missionName: 'string',
       xpGranted: 'number',
+      assignmentId: 'string',
     },
   },
   {

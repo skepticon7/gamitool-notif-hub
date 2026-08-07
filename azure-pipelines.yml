@@ -1,0 +1,86 @@
+# Azure Pipelines equivalent of .github/workflows/backend.yml — e2e is
+# deliberately excluded for now (unit + integration only). Since e2e was the
+# only tier that boots the real AppModule, dropping it also drops: the Mongo
+# service container (unit tests mock everything, integration tests only ever
+# touch MySQL/Redis directly — see test/integration/*.spec.ts, which build
+# their own DataSource/Redis client from env vars, never import AppModule),
+# and every app-boot-only placeholder env var (JWT_SECRET, SESSION_SECRET,
+# AUTHENTIK_*, N8N_*) that existed solely so ConfigService.getOrThrow calls
+# during Nest bootstrap didn't fail.
+
+trigger:
+  branches:
+    include:
+      - main
+      - feature/*
+
+pr:
+  branches:
+    include:
+      - main
+
+resources:
+  containers:
+    - container: mysql
+      image: mysql:8
+      env:
+        MYSQL_ROOT_PASSWORD: root
+        MYSQL_DATABASE: gamitool_notif_hub
+      ports:
+        - 3306:3306
+      options: --health-cmd="mysqladmin ping -proot" --health-interval=10s --health-timeout=5s --health-retries=10
+    - container: redis
+      image: redis:7
+      ports:
+        - 6379:6379
+      options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=10
+
+jobs:
+  - job: backend
+    displayName: 'Build and Test Backend'
+    pool:
+      vmImage: ubuntu-latest
+    services:
+      mysql: mysql
+      redis: redis
+    variables:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_USERNAME: root
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: gamitool_notif_hub
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: '26.6.0'
+        displayName: 'Setup Node.js'
+
+      - task: Cache@2
+        inputs:
+          key: 'npm | "$(Agent.OS)" | nest-notif-hub/package-lock.json'
+          restoreKeys: |
+            npm | "$(Agent.OS)"
+          path: $(npm_config_cache)
+        displayName: 'Cache npm packages'
+
+      - script: npm ci
+        workingDirectory: nest-notif-hub
+        displayName: 'Install dependencies'
+
+      - script: npm test
+        workingDirectory: nest-notif-hub
+        displayName: 'Run unit tests'
+
+      - script: npm run test:integration:sync-schema
+        workingDirectory: nest-notif-hub
+        displayName: 'Sync database schema for integration tests'
+
+      - script: npm run test:integration
+        workingDirectory: nest-notif-hub
+        displayName: 'Run integration tests'
+
+      - script: npm run build
+        workingDirectory: nest-notif-hub
+        displayName: 'Build application'

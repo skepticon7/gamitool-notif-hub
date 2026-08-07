@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useAuthStore } from '@/store/auth-store';
-import { BellIcon } from './nav-icons';
+import { NotificationBell } from '@/features/notifications';
 import { ProfileDrawer } from './profile-drawer';
 
 export function TopBar() {
@@ -25,15 +25,7 @@ export function TopBar() {
                 Live · WebSocket
             </div>
 
-            {user.role === 'employee' && (
-                <button
-                    type="button"
-                    aria-label="Notifications"
-                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-input border border-border bg-white text-foreground"
-                >
-                    <BellIcon className="h-5 w-5" />
-                </button>
-            )}
+            {user.role === 'employee' && <NotificationBell />}
 
             <button
                 type="button"

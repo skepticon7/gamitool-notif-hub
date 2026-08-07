@@ -1,3 +1,5 @@
+'use client';
+
 import { useCallback, useState } from 'react';
 import { useSocketEvent } from '@/hooks/use-socket-event';
 import type { LevelUpPayload, XpGrantedPayload } from '../types';

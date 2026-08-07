@@ -2,18 +2,20 @@
 
 import { CheckCircle2 } from 'lucide-react';
 import { useMyEmployeeProfileQuery } from '../queries/use-my-employee-profile-query';
+import { useLiveMissionsCompleted } from '../hooks/use-live-missions-completed';
 import { StatCard } from './stat-card';
 
-// No dedicated live event for this count — kept in sync by
-// EmployeeStatsGrid's activity:new-triggered profile refetch, same as
-// badgesEarned's baseline (see that card's parent for the invalidation).
 export function MissionsCompletedStatCard() {
     const profile = useMyEmployeeProfileQuery();
+    const { missionsCompleted } = useLiveMissionsCompleted({
+        baseCount: profile.data?.missionsCompleted ?? null,
+        isReady: profile.isSuccess,
+    });
 
     return (
         <StatCard
             label="Missions completed"
-            value={profile.data?.missionsCompleted ?? '—'}
+            value={missionsCompleted ?? '—'}
             icon={CheckCircle2}
             accentTextClass="text-green"
             accentBgClass="bg-light-green"

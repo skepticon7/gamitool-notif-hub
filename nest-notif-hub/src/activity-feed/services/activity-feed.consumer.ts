@@ -14,6 +14,10 @@ import { OutboxProcessor } from '../../outbox/services/outbox.processor';
 import { NotificationGateway } from '../../websocket/notification.gateway';
 import { formatActivityMessage } from './format-activity-message';
 import { RulesCache } from '../../rule-engine/services/rules-cache';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { MissionAssignmentEntity } from '../../missions/entities/mission-assignment.entity';
+import { AssignmentDto } from '../../missions/dto/assignments.dto';
 
 const CONSUMER_GROUP = 'activity-feed';
 const CONSUMER_NAME = `process-${process.pid}`;
@@ -36,6 +40,8 @@ export class ActivityFeedConsumer
     private readonly outboxProcessor: OutboxProcessor,
     private readonly notificationGateway : NotificationGateway,
     private readonly rulesCache: RulesCache,
+    @InjectRepository(MissionAssignmentEntity)
+    private readonly assignmentRepo: Repository<MissionAssignmentEntity>,
   ) {}
 
   async onModuleInit() {
@@ -91,31 +97,68 @@ export class ActivityFeedConsumer
     const messageText = formatActivityMessage(eventType , payload);
     if(messageText && payload.employeeId) {
 
+      // OutboxProcessor.replayRecent() re-XADDs every outbox row from the
+      // last 24h as brand-new stream entries any time a consumer self-heals
+      // from NOGROUP — so this exact event can legitimately arrive here
+      // more than once. The Mongo upsert below is already safe on replay
+      // (same _id: eventId), but nothing emitted over the socket has any
+      // dedup of its own — a naive frontend counter incrementing/
+      // decrementing on mission:assigned/completed/expired would double
+      // count on every replay. Checking whether this eventId was already
+      // recorded BEFORE emitting is what stops that — mirrors the
+      // protection RuleEngineConsumer already gets from processed_events.
+      const alreadyRecorded = await this.activityModel.exists({ _id: eventId });
+
       await this.activityModel.updateOne(
         {_id: eventId},
         {$set: {employeeId : payload.employeeId , eventType ,  occurredOn : new Date(message.fields.occurredOn) , payload , message : messageText}},
         {upsert : true}
       )
 
+      if (alreadyRecorded) {
+        await this.redis.xack(EVENT_STREAM, CONSUMER_GROUP, message.id);
+        return;
+      }
+
       if(eventType === "MissionAssigned") {
         console.log("emitting mission assigned to user : " + payload.employeeId);
-        // Whether completing this mission will actually grant XP — derived
-        // from the live rule graph (MissionCompleted -> GrantXP wiring), not
-        // a mission-catalog field, since it's admin-configurable and can
-        // change independently of the mission itself.
-        const xpStatus = this.rulesCache
-          .get('MissionCompleted')
-          .some((rule) => rule.action === 'GrantXP');
-        this.notificationGateway.emitToEmployee(payload.employeeId , 'mission:assigned' , {
-          id: payload.assignmentId,
-          deadline: payload.deadline ?? null,
-          xpStatus,
-          mission : {
-            name: payload.missionName,
-            xpGranted : payload.xpGranted,
-            durationDays: payload.durationDays
-          }
-        })
+        this.notificationGateway.emitToEmployee(
+          payload.employeeId,
+          'mission:assigned',
+          {
+            id: payload.assignmentId,
+            deadline: payload.deadline ?? null,
+            xpStatus: this.xpGrantedOnCompletion(),
+            assignedAt: payload.assignedAt,
+            missionId: payload.missionId,
+            status:'ASSIGNED',
+            mission: {
+              name: payload.missionName,
+              xpGranted: payload.xpGranted,
+              durationDays: payload.durationDays,
+            },
+          },
+        );
+      }
+
+      // MissionCompleted/MissionExpired both carry assignmentId — reusing
+      // AssignmentDto (fed by a fresh row, same as the REST endpoints) here
+      // instead of hand-building an equivalent object from the event
+      // payload keeps this shape from drifting out of sync with what
+      // GET /missions/my-assignments and /assignments/latest return.
+      if (eventType === 'MissionCompleted' || eventType === 'MissionExpired') {
+        const assignment = await this.assignmentRepo.findOne({
+          where: { id: payload.assignmentId },
+          relations: { mission: true },
+        });
+        if (assignment) {
+          const dto = new AssignmentDto(assignment, this.xpGrantedOnCompletion());
+          this.notificationGateway.emitToEmployee(
+            payload.employeeId,
+            eventType === 'MissionCompleted' ? 'mission:completed' : 'mission:expired',
+            dto,
+          );
+        }
       }
 
       this.notificationGateway.emitToEmployee(payload.employeeId, 'activity:new' , {
@@ -124,6 +167,17 @@ export class ActivityFeedConsumer
 
     }
     await this.redis.xack(EVENT_STREAM, CONSUMER_GROUP, message.id);
+  }
+
+  // Whether completing a mission actually grants XP — derived from the live
+  // rule graph (MissionCompleted -> GrantXP wiring), not a mission-catalog
+  // field, since it's admin-configurable and can change independently of
+  // any one mission. Shared by mission:assigned, mission:completed and
+  // mission:expired so the flag means the same thing everywhere it appears.
+  private xpGrantedOnCompletion(): boolean {
+    return this.rulesCache
+      .get('MissionCompleted')
+      .some((rule) => rule.action === 'GrantXP');
   }
 
   private async readNextBatch(): Promise<StreamMessage[]> {

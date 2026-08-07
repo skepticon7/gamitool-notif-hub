@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import ROUTES from '@/config/constants/routes';
+import { useMyMissionAssignmentsQuery } from '@/features/missions';
+import { useLiveActiveQuests } from '@/features/employees';
 import {
     BadgesIcon,
     CatalogIcon,
@@ -65,6 +67,18 @@ export function Sidebar() {
         };
     }, []);
 
+    // Hooks must run unconditionally (before the `if (!user)` early return
+    // below) — disabled via `enabled` for admins instead of skipping the
+    // call, same pattern used everywhere else a query is role-gated.
+    const activeQuests = useMyMissionAssignmentsQuery({
+        status: 'ASSIGNED',
+        enabled: user?.role === 'employee',
+    });
+    const { count: activeQuestsCount } = useLiveActiveQuests({
+        baseCount: activeQuests.data?.length ?? null,
+        isReady: activeQuests.isSuccess,
+    });
+
     if (!user) {
         return null;
     }
@@ -104,6 +118,7 @@ export function Sidebar() {
 
                 {items.map(({ href, label, Icon }) => {
                     const active = pathname === href;
+                    const badgeCount = href === ROUTES.EMPLOYEE.MISSIONS ? activeQuestsCount : null;
                     return (
                         <Link
                             key={href}
@@ -115,6 +130,11 @@ export function Sidebar() {
                         >
                             <Icon className="h-5 w-5 flex-shrink-0" />
                             {!collapsed && <span className="flex-1 truncate">{label}</span>}
+                            {!collapsed && badgeCount != null && badgeCount > 0 && (
+                                <span className="flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-white">
+                                    {badgeCount}
+                                </span>
+                            )}
                         </Link>
                     );
                 })}

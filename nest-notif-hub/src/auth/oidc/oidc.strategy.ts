@@ -24,9 +24,9 @@ export class OidcStrategy {
       authorizationURL: process.env.AUTHENTIK_URL + '/application/o/authorize/',
       tokenURL: process.env.AUTHENTIK_URL + '/application/o/token/',
       userInfoURL: process.env.AUTHENTIK_URL + '/application/o/userinfo/',
-      clientID: process.env.CLIENT_ID!,
-      clientSecret: process.env.CLIENT_SECRET!,
-      callbackURL: process.env.CALLBACK!,
+      clientID: process.env.AUTHENTIK_CLIENT_ID!,
+      clientSecret: process.env.AUTHENTIK_CLIENT_SECRET!,
+      callbackURL: process.env.AUTHENTIK_CALLBACK!,
       scope: ['openid', 'profile', 'email', 'offline_access'],
     };
 

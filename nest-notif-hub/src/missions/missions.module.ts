@@ -25,6 +25,7 @@ import { UpdateSchedulmentHandler } from './handlers/update-schedulment.handler'
 import { CancelSchedulmentHandler } from './handlers/cancel-schedulment.handler';
 import { GetSchedulmentsHandler } from './handlers/get-schedulments.handler';
 import { GetLatestMissionAssignmentsHandler } from './handlers/get-latest-mission-assignments.handler';
+import { RulesCacheModule } from '../rule-engine/rules-cache.module';
 
 const CommandHandlers = [
   AssignMissionHandler,
@@ -56,6 +57,7 @@ const QueryHandlers = [
       EmployeeUserEntity,
       MissionSchedulmentEntity,
     ]),
+    RulesCacheModule,
   ],
   controllers: [MissionsController],
   providers: [

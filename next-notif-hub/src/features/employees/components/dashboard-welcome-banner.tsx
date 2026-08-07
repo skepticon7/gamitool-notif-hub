@@ -19,7 +19,7 @@ export function DashboardWelcomeBanner() {
             </div>
 
             <div className="relative flex items-center justify-between gap-6 px-8 py-10">
-                <div className="max-w-md">
+                <div className="max-w-lg">
                     <h1 className="mb-1.5 text-[22px] font-extrabold text-foreground">
                         Welcome {firstName} 👋 to your Dashboard
                     </h1>

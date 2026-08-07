@@ -1,3 +1,5 @@
+'use client';
+
 import { useContext, useEffect } from 'react';
 import { SocketContext } from '@/components/providers/socket-provider';
 
